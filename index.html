@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Millionaire Quiz</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <h1 class="game-title">MILLIONAIRE<br>QUIZ</h1>
+            <button id="start-btn" class="millionaire-btn">START</button>
+            <button id="review-btn" class="millionaire-btn secondary">復習モード</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="screen">
+            <div class="top-bar">
+                <div class="question-number">Q. <span id="q-num">1</span></div>
+                <div class="score">賞金: <span id="score-val">0</span>円</div>
+            </div>
+
+            <div class="quiz-main-layout">
+                <div id="score-table" class="score-table">
+                    <!-- Loaded via JS -->
+                </div>
+
+                <div class="quiz-content-area">
+                    <div class="lifelines">
+                        <button id="lifeline-5050" class="lifeline-btn" title="50:50">50:50</button>
+                        <button id="lifeline-phone" class="lifeline-btn" title="Phone">📞</button>
+                        <button id="lifeline-audience" class="lifeline-btn" title="Audience">👥</button>
+                    </div>
+
+                    <div class="question-area">
+                        <div id="image-container" class="image-container hidden">
+                            <img id="question-image" src="" alt="Question Image">
+                        </div>
+                        <div class="question-box">
+                            <p id="question-text">ここに問題文が表示されます。</p>
+                        </div>
+                    </div>
+
+                    <div class="options-grid">
+                        <button class="option-btn" data-index="0"><span class="option-label">A:</span> <span
+                                class="option-text">Option A</span></button>
+                        <button class="option-btn" data-index="1"><span class="option-label">B:</span> <span
+                                class="option-text">Option B</span></button>
+                        <button class="option-btn" data-index="2"><span class="option-label">C:</span> <span
+                                class="option-text">Option C</span></button>
+                        <button class="option-btn" data-index="3"><span class="option-label">D:</span> <span
+                                class="option-text">Option D</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen">
+            <h2>GAME OVER</h2>
+            <div class="final-score">Score: <span id="final-score-val">0</span> / 20</div>
+            <p id="result-message"></p>
+            <button id="retry-btn" class="millionaire-btn">TRY AGAIN</button>
+            <button id="home-btn" class="millionaire-btn secondary">HOME</button>
+        </div>
+
+        <!-- Feedback Overlay -->
+        <div id="feedback-overlay" class="feedback-overlay hidden">
+            <div class="feedback-content">
+                <h2 id="feedback-title">CORRECT</h2>
+                <p id="feedback-explanation"></p>
+                <button id="next-question-btn" class="millionaire-btn">NEXT</button>
+            </div>
+        </div>
+
+        <!-- Audience Graph Modal -->
+        <div id="audience-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Audience Vote</h3>
+                <div class="graph-container">
+                    <div class="bar-group">
+                        <div class="bar" id="bar-a" style="height: 0%"></div><span>A</span>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar" id="bar-b" style="height: 0%"></div><span>B</span>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar" id="bar-c" style="height: 0%"></div><span>C</span>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar" id="bar-d" style="height: 0%"></div><span>D</span>
+                    </div>
+                </div>
+                <button id="close-audience" class="millionaire-btn small">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="bgm-main" loop src="assets/audio/bgm_main.mp3"></audio> <!-- Create placeholder or use empty for now -->
+
+    <script src="script.js"></script>
+</body>
+
+</html>
