@@ -19,6 +19,7 @@
             <button id="start-btn" class="millionaire-btn">START</button>
             <button id="review-menu-btn" class="millionaire-btn secondary">復習モード</button>
             <button id="history-menu-btn" class="millionaire-btn secondary">履歴を見る</button>
+            <button id="shop-menu-btn" class="millionaire-btn secondary">ショップ (テーマ変更)</button>
         </div>
 
         <!-- Review Selection Screen -->
@@ -58,6 +59,7 @@
         <div id="quiz-screen" class="screen">
             <div class="top-bar">
                 <div class="question-number">Q. <span id="q-num">1</span></div>
+                <button id="toggle-score-btn" class="millionaire-btn mini">賞金一覧</button>
                 <div class="score">賞金: <span id="score-val">0</span>円</div>
             </div>
 
@@ -115,6 +117,7 @@
             <div class="feedback-content">
                 <h2 id="feedback-title">CORRECT</h2>
                 <p id="feedback-explanation"></p>
+                <p id="feedback-next-prize" class="next-prize-info"></p>
                 <button id="next-question-btn" class="millionaire-btn">NEXT</button>
             </div>
         </div>
@@ -122,28 +125,48 @@
         <!-- Audience Graph Modal -->
         <div id="audience-modal" class="modal hidden">
             <div class="modal-content">
-                <h3>Audience Vote</h3>
+                <h3>オーディエンスの回答</h3>
+                <p class="modal-desc">会場の100人にアンケートをとりました</p>
                 <div class="graph-container">
                     <div class="bar-group">
-                        <div class="bar" id="bar-a" style="height: 0%"></div><span>A</span>
+                        <span id="percent-a" class="percent-text">0%</span>
+                        <div class="bar" id="bar-a" style="height: 0%"></div>
+                        <span class="bar-label">A</span>
                     </div>
                     <div class="bar-group">
-                        <div class="bar" id="bar-b" style="height: 0%"></div><span>B</span>
+                        <span id="percent-b" class="percent-text">0%</span>
+                        <div class="bar" id="bar-b" style="height: 0%"></div>
+                        <span class="bar-label">B</span>
                     </div>
                     <div class="bar-group">
-                        <div class="bar" id="bar-c" style="height: 0%"></div><span>C</span>
+                        <span id="percent-c" class="percent-text">0%</span>
+                        <div class="bar" id="bar-c" style="height: 0%"></div>
+                        <span class="bar-label">C</span>
                     </div>
                     <div class="bar-group">
-                        <div class="bar" id="bar-d" style="height: 0%"></div><span>D</span>
+                        <span id="percent-d" class="percent-text">0%</span>
+                        <div class="bar" id="bar-d" style="height: 0%"></div>
+                        <span class="bar-label">D</span>
                     </div>
                 </div>
-                <button id="close-audience" class="millionaire-btn small">CLOSE</button>
+                <button id="close-audience" class="millionaire-btn small">閉じる</button>
             </div>
         </div>
-    </div>
+        <!-- Shop Screen -->
+        <div id="theme-shop-screen" class="screen">
+            <div class="shop-header">
+                <h2>THEME SHOP</h2>
+                <div class="total-prize-display">所持金: <span id="shop-total-prize-display">$0</span></div>
+            </div>
+            <div id="shop-items-container" class="item-grid">
+                <!-- Loaded via JS -->
+            </div>
+            <button id="shop-close-btn" class="millionaire-btn secondary">戻る</button>
+        </div>
+    </div> <!-- app-container end -->
 
     <!-- Audio Elements -->
-    <audio id="bgm-main" loop src="assets/audio/bgm_main.mp3"></audio> <!-- Create placeholder or use empty for now -->
+    <audio id="bgm-main" loop src="assets/audio/bgm_main.mp3"></audio>
 
     <script src="script.js"></script>
 </body>

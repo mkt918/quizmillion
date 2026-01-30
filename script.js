@@ -3,7 +3,28 @@ class QuizApp {
         this.questions = [];
         this.currentQuestionIndex = 0;
         this.score = 0;
-        this.quizDataUrl = 'data/2025_jo03.csv'; // New question set for junior high students // Local path, can be replaced with Google Sheet URL
+        this.quizDataUrl = 'data/2025_jo03.csv'; // New question set for junior high students
+
+        // Shop State
+        this.totalPrize = parseInt(localStorage.getItem('quizTotalPrize')) || 1000000000;
+        this.ownedItems = JSON.parse(localStorage.getItem('quizOwnedItems')) || ['default-theme'];
+        this.activeTheme = localStorage.getItem('quizActiveTheme') || 'default-theme';
+
+        this.shopItems = [
+            { id: 'default-theme', category: 'theme', name: 'デフォルトブルー', price: 0, desc: '標準的なミリオネアブルー', icon: '💎' },
+            { id: 'theme-forest', category: 'theme', name: 'ミスティックフォレスト', price: 1000000, desc: '神秘的な森の緑', icon: '🌲' },
+            { id: 'theme-ocean', category: 'theme', name: 'ディープオーシャン', price: 5000000, desc: '深海の静寂', icon: '🌊' },
+            { id: 'theme-darknight', category: 'theme', name: 'ダークナイト', price: 10000000, desc: 'クールな黒と紫', icon: '🌙' },
+            { id: 'theme-sunset', category: 'theme', name: 'サンセットグロウ', price: 20000000, desc: '夕暮れのグラデーション', icon: '🌅' },
+            { id: 'theme-cyber', category: 'theme', name: 'サイバーパンク', price: 40000000, desc: 'ネオン輝く近未来', icon: '🤖' },
+            { id: 'theme-gold', category: 'theme', name: 'ゴールド', price: 70000000, desc: '豪華な黄金のテーマ', icon: '✨' },
+            { id: 'theme-rose', category: 'theme', name: 'ロイヤルローズ', price: 100000000, desc: '優雅な赤と金', icon: '🌹' },
+            { id: 'theme-sakura', category: 'theme', name: '真夜中の桜', price: 150000000, desc: '月夜に舞う幻想的な桜', icon: '🌸' },
+            { id: 'theme-galaxy', category: 'theme', name: 'ギャラクシー', price: 200000000, desc: '無限に広がる星々の輝き', icon: '🌌' },
+            { id: 'theme-volcano', category: 'theme', name: 'ヴォルカニック', price: 300000000, desc: 'たぎる溶岩の情熱', icon: '🌋' },
+            { id: 'theme-snow', category: 'theme', name: 'スノークリスタル', price: 400000000, desc: '絶対零度の美しさ', icon: '❄️' },
+            { id: 'theme-marble', category: 'theme', name: 'マーブルラグジュアリー', price: 500000000, desc: '最高級大理石の質感', icon: '🏛️' }
+        ];
 
         // Lifeline states
         this.lifelines = {
@@ -23,7 +44,8 @@ class QuizApp {
             history: document.getElementById('history-screen'),
             units: document.getElementById('unit-selection-screen'),
             quiz: document.getElementById('quiz-screen'),
-            result: document.getElementById('result-screen')
+            result: document.getElementById('result-screen'),
+            shop: document.getElementById('theme-shop-screen')
         };
 
         this.els = {
@@ -39,6 +61,8 @@ class QuizApp {
             unitList: document.getElementById('unit-selection-list'),
             unitError: document.getElementById('unit-error'),
             unitCount: document.getElementById('total-selected-questions'),
+            totalPrizeDisplay: document.getElementById('shop-total-prize-display'),
+            shopItemList: document.getElementById('shop-items-container'),
             options: Array.from(document.querySelectorAll('.option-btn')),
             lifelineBtns: {
                 '5050': document.getElementById('lifeline-5050'),
@@ -48,13 +72,22 @@ class QuizApp {
             feedbackOverlay: document.getElementById('feedback-overlay'),
             feedbackTitle: document.getElementById('feedback-title'),
             feedbackExplanation: document.getElementById('feedback-explanation'),
+            feedbackNextPrize: document.getElementById('feedback-next-prize'),
             audienceModal: document.getElementById('audience-modal'),
             audienceBars: {
                 'A': document.getElementById('bar-a'),
                 'B': document.getElementById('bar-b'),
                 'C': document.getElementById('bar-c'),
                 'D': document.getElementById('bar-d')
-            }
+            },
+            audiencePercents: {
+                'A': document.getElementById('percent-a'),
+                'B': document.getElementById('percent-b'),
+                'C': document.getElementById('percent-c'),
+                'D': document.getElementById('percent-d')
+            },
+            phoneHintArea: document.getElementById('phone-hint-area'),
+            phoneHintText: document.getElementById('phone-hint-text')
         };
 
         this.prizes = [
@@ -66,8 +99,16 @@ class QuizApp {
 
         this.isMuted = true; // User requested audio to be muted by default
         this.bgmOscillators = [];
+
+        this.applyTheme(this.activeTheme);
         this.initEventListeners();
+        this.updateHeaderUI();
     }
+
+    updateHeaderUI() {
+        // No title to update for now as titles were removed
+    }
+
 
     async init() {
         await this.loadQuestions();
@@ -103,6 +144,15 @@ class QuizApp {
         document.getElementById('select-all-units-btn').onclick = () => this.selectAllUnits();
         document.getElementById('confirm-units-btn').onclick = () => this.confirmUnits();
 
+        // Shop Listeners
+        document.getElementById('shop-menu-btn').onclick = () => this.showShop();
+        document.getElementById('shop-close-btn').onclick = () => this.showScreen('start');
+
+        // Prize Table Toggle
+        document.getElementById('toggle-score-btn').onclick = () => {
+            this.els.scoreTable.classList.toggle('visible');
+        };
+
         this.els.options.forEach(btn => {
             btn.onclick = (e) => this.handleAnswer(e);
         });
@@ -118,35 +168,142 @@ class QuizApp {
             const response = await fetch(this.quizDataUrl);
             const text = await response.text();
             this.questions = this.parseCSV(text);
+            console.log(`Successfully loaded ${this.questions.length} questions from ${this.quizDataUrl}`);
         } catch (error) {
             console.error("Error loading CSV:", error);
-            alert("データの読み込みに失敗しました。");
+            alert("データの読み込みに失敗しました。ファイルが存在するか、CSV形式が正しいか確認してください。");
         }
     }
 
+    // --- Shop Methods ---
+    // --- Shop Methods ---
+    showShop() {
+        this.showScreen('shop');
+        if (this.els.totalPrizeDisplay) {
+            this.els.totalPrizeDisplay.textContent = `¥${this.totalPrize.toLocaleString()}`;
+        }
+        this.renderShopItems();
+    }
+
+    renderShopItems() {
+        if (!this.els.shopItemList) return;
+        this.els.shopItemList.innerHTML = '';
+        this.shopItems.forEach(item => {
+            const isOwned = this.ownedItems.includes(item.id);
+            const canAfford = this.totalPrize >= item.price;
+            const isActive = this.activeTheme === item.id;
+
+            const card = document.createElement('div');
+            card.className = 'shop-item-card';
+            card.innerHTML = `
+                <div class="item-icon">${item.icon}</div>
+                <div class="item-name">${item.name}</div>
+                <div class="item-price">¥${item.price.toLocaleString()}</div>
+                <div class="item-desc">${item.desc}</div>
+                <button class="buy-btn ${isOwned ? 'owned' : ''} ${isActive ? 'active-item' : ''}" 
+                    ${(!isOwned && !canAfford) ? 'disabled' : ''}>
+                    ${isOwned ? (isActive ? '使用中' : '変更する') : '購入'}
+                </button>
+            `;
+
+            const btn = card.querySelector('.buy-btn');
+            btn.onclick = () => {
+                if (isOwned) {
+                    this.applyTheme(item.id);
+                    this.renderShopItems(); // Refresh button states
+                    return;
+                }
+                this.buyItem(item);
+            };
+
+            this.els.shopItemList.appendChild(card);
+        });
+    }
+
+    buyItem(item) {
+        if (this.totalPrize >= item.price) {
+            this.totalPrize -= item.price;
+            this.ownedItems.push(item.id);
+            localStorage.setItem('quizOwnedItems', JSON.stringify(this.ownedItems));
+
+            localStorage.setItem('quizTotalPrize', this.totalPrize);
+
+            // Auto-apply purchased theme
+            this.applyTheme(item.id);
+
+            this.showShop(); // Refresh UI
+            this.playSFX('correct');
+        }
+    }
+
+    applyTheme(themeId) {
+        document.body.className = '';
+        if (themeId !== 'default-theme') {
+            document.body.classList.add(themeId);
+        }
+
+        this.activeTheme = themeId;
+        localStorage.setItem('quizActiveTheme', themeId);
+        this.playSFX('correct');
+    }
+
+    showScreen(screenId) {
+        Object.values(this.screens).forEach(s => {
+            if (s) s.classList.remove('active');
+        });
+        if (this.screens[screenId]) {
+            this.screens[screenId].classList.add('active');
+        } else {
+            console.error(`Screen ${screenId} not found`);
+        }
+    }
+
+
     parseCSV(text) {
-        const lines = text.trim().split('\n');
-        const headers = lines[0].split(',');
+        const lines = text.trim().split(/\r?\n/);
         const questions = [];
 
+        // Helper to parse a single CSV line into an array of fields
+        const parseRow = (line) => {
+            const fields = [];
+            let currentField = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+                if (char === '"' && inQuotes && nextChar === '"') {
+                    currentField += '"';
+                    i++;
+                } else if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    fields.push(currentField);
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            fields.push(currentField);
+            return fields;
+        };
+
         for (let i = 1; i < lines.length; i++) {
-            // Handle CSV parsing carefully (simpler split for now, assuming no commas in fields)
-            // A more robust regex splitter would be better for complex CSVs
-            const row = lines[i].split(',');
+            const row = parseRow(lines[i]);
             if (row.length < 4) continue;
 
             const q = {
                 id: row[0],
                 unit: (row[1] || "").trim(),
-                text: row[2],
+                text: (row[2] || "").trim(),
                 correctAnswer: (row[3] || "").trim(),
-                image: row[4],
-                explanation: row[5] ? row[5].trim() : ''
+                image: (row[4] || "").trim(),
+                explanation: (row[5] || "").trim()
             };
             if (q.text) questions.push(q);
         }
         return questions;
     }
+
 
     showUnitSelection() {
         this.initAudio();
@@ -226,7 +383,8 @@ class QuizApp {
         this.currentQuizSet = quizSet.slice(0, 20);
 
         if (this.currentQuizSet.length === 0) {
-            alert("問題が見つかりませんでした。");
+            console.error("Quiz set is empty. Initial questions length:", this.questions.length);
+            alert("問題が見つかりませんでした。選択したカテゴリー、またはデータファイルを確認してください。");
             this.stopBGM();
             return;
         }
@@ -235,18 +393,65 @@ class QuizApp {
         this.displayQuestion();
     }
 
-    displayQuestion() {
-        const q = this.currentQuizSet[this.currentQuestionIndex];
+    renderScoreTable() {
+        this.els.scoreTable.innerHTML = '';
+        this.prizes.forEach((prize, idx) => {
+            const row = document.createElement('div');
+            row.className = 'score-row';
+            if (idx === this.currentQuestionIndex) row.classList.add('active');
+            if (idx < this.score) row.classList.add('passed');
+            if ((idx + 1) % 5 === 0) row.classList.add('safe-point');
 
-        this.els.qNum.textContent = this.currentQuestionIndex + 1;
-        const currentPrize = this.score > 0 ? this.prizes[this.score - 1] : 0;
-        this.els.scoreVal.textContent = currentPrize.toLocaleString();
+            row.innerHTML = `<span>${idx + 1}</span> <span>¥${prize.toLocaleString()}</span>`;
+            this.els.scoreTable.appendChild(row);
+        });
+    }
+
+    displayQuestion() {
+        if (this.currentQuestionIndex >= this.currentQuizSet.length) {
+            this.showResult();
+            return;
+        }
+
+        const q = this.currentQuizSet[this.currentQuestionIndex];
+        // correctShuffledIndex will be set during shuffledOptions mapping/rendering
+
+        // Clear previous lifeline UI
+        if (this.els.phoneHintArea) {
+            this.els.phoneHintArea.classList.add('hidden');
+            this.els.phoneHintText.textContent = "";
+        }
+
+        // Reset 50:50 opacity for all buttons
+        this.els.options.forEach(btn => btn.style.opacity = '1');
+
+        // Reset audience poll bars
+        if (this.els.audienceBars) {
+            Object.values(this.els.audienceBars).forEach(bar => {
+                if (bar) bar.style.height = '0%';
+            });
+        }
+        if (this.els.audiencePercents) {
+            Object.values(this.els.audiencePercents).forEach(p => {
+                if (p) {
+                    p.textContent = '0%';
+                    p.classList.remove('visible');
+                }
+            });
+        }
+        if (this.els.audienceModal) {
+            this.els.audienceModal.classList.add('hidden');
+        }
+
+
         this.els.questionText.textContent = q.text;
-        this.els.unitDisplay.textContent = q.unit || "不明";
+        this.els.qNum.textContent = this.currentQuestionIndex + 1;
+        this.els.unitDisplay.textContent = q.unit || "";
+        this.els.scoreVal.textContent = (this.score > 0 ? this.prizes[this.score - 1] : 0).toLocaleString();
 
         this.renderScoreTable();
 
-        // --- Dynamic Distractor Generation (Simplified CSV) ---
+        // --- Dynamic Distractor Generation ---
         const correctText = q.correctAnswer;
 
         // Find all other correct answers from the same unit
@@ -296,22 +501,16 @@ class QuizApp {
         this.els.options.forEach((btn, idx) => {
             btn.querySelector('.option-text').textContent = this.shuffledOptions[idx].text;
             btn.classList.remove('selected', 'correct', 'wrong', 'hidden');
+            btn.style.opacity = '1'; // Ensure opacity is reset here too
             btn.disabled = false;
-        });
-    }
 
-    renderScoreTable() {
-        this.els.scoreTable.innerHTML = '';
-        this.prizes.forEach((prize, idx) => {
-            const row = document.createElement('div');
-            row.className = 'score-row';
-            if (idx === this.currentQuestionIndex) row.classList.add('active');
-            if (idx < this.score) row.classList.add('passed');
-            if ((idx + 1) % 5 === 0) row.classList.add('safe-point');
-
-            row.innerHTML = `<span>${idx + 1}</span> <span>¥${prize.toLocaleString()}</span>`;
-            this.els.scoreTable.appendChild(row);
+            // Track the correct index in its shuffled position
+            if (this.shuffledOptions[idx].isCorrect) {
+                this.correctShuffledIndex = idx;
+            }
         });
+
+        console.log(`Question displayed. Correct shuffled index: ${this.correctShuffledIndex}`);
     }
 
     handleAnswer(e) {
@@ -378,17 +577,26 @@ class QuizApp {
 
     showFeedback(isCorrect) {
         const q = this.currentQuizSet[this.currentQuestionIndex];
+        const nextBtn = document.getElementById('next-question-btn');
 
         this.els.feedbackTitle.textContent = isCorrect ? "CORRECT!" : "GAME OVER";
         this.els.feedbackTitle.style.color = isCorrect ? "var(--correct-green)" : "var(--wrong-red)";
         this.els.feedbackExplanation.textContent = q.explanation || "";
 
-        // If wrong, change button to "RESULT"
-        const nextBtn = document.getElementById('next-question-btn');
         if (isCorrect) {
             nextBtn.textContent = "NEXT";
+            const nextPrize = this.prizes[this.score];
+            if (nextPrize) {
+                this.els.feedbackNextPrize.textContent = `次の賞金: ¥${nextPrize.toLocaleString()}`;
+                this.els.feedbackNextPrize.classList.remove('hidden');
+            } else {
+                this.els.feedbackNextPrize.textContent = "全問正解！ミリオネア達成！";
+                nextBtn.textContent = "RESULT";
+            }
         } else {
             nextBtn.textContent = "SHOW RESULT";
+            this.els.feedbackNextPrize.textContent = "";
+            this.els.feedbackNextPrize.classList.add('hidden');
         }
 
         this.els.feedbackOverlay.classList.remove('hidden');
@@ -460,6 +668,10 @@ class QuizApp {
         };
         this.history.unshift(result);
         localStorage.setItem('quizMillionaireHistory', JSON.stringify(this.history.slice(0, 50)));
+
+        // --- Shop Update: Add Prize to Total Prize ---
+        this.totalPrize += finalPrize;
+        localStorage.setItem('quizTotalPrize', this.totalPrize);
     }
 
     showReviewSelection() {
@@ -547,9 +759,20 @@ class QuizApp {
         let wrongIndices = [0, 1, 2, 3].filter(i => i !== correctIndex);
         this.shuffle(wrongIndices);
 
-        // Hide 2 wrong options
-        this.els.options[wrongIndices[0]].classList.add('hidden');
-        this.els.options[wrongIndices[1]].classList.add('hidden');
+        // Hide 2 wrong options with staggered delay
+        setTimeout(() => {
+            this.els.options[wrongIndices[0]].style.opacity = '0';
+            setTimeout(() => {
+                this.els.options[wrongIndices[0]].classList.add('hidden');
+            }, 800);
+        }, 500);
+
+        setTimeout(() => {
+            this.els.options[wrongIndices[1]].style.opacity = '0';
+            setTimeout(() => {
+                this.els.options[wrongIndices[1]].classList.add('hidden');
+            }, 800);
+        }, 1500);
     }
 
     usePhone() {
@@ -558,42 +781,92 @@ class QuizApp {
         this.els.lifelineBtns['phone'].classList.add('used');
         this.els.lifelineBtns['phone'].disabled = true;
 
-        const correctText = this.shuffledOptions[this.correctShuffledIndex].text;
+        const q = this.currentQuizSet[this.currentQuestionIndex];
+        const hint = q.explanation || "うーん、少し難しいですね...でも、落ち着いて考えれば分かるはずです！";
 
-        alert(`電話の相手: 「たぶん、${correctText} だと思うよ！」`);
+        if (this.els.phoneHintArea) {
+            this.els.phoneHintText.textContent = hint;
+            this.els.phoneHintArea.classList.remove('hidden');
+        } else {
+            alert(`電話の相手: 「${hint}」`);
+        }
     }
 
     useAudience() {
         if (!this.lifelines['audience']) return;
+
+        let correctIndex = this.correctShuffledIndex;
+        console.log("[DEBUG] Audience Lifeline Triggered");
+        console.log("[DEBUG] Correct Shuffled Index:", correctIndex);
+
+        if (correctIndex === undefined || correctIndex === -1) {
+            console.warn("[DEBUG] correctShuffledIndex was -1. Emergency recalc...");
+            correctIndex = this.shuffledOptions.findIndex(opt => opt.isCorrect);
+            this.correctShuffledIndex = correctIndex;
+        }
+
+        if (correctIndex === -1) {
+            console.error("[DEBUG] Failed to identify correct answer index for Audience!");
+            return;
+        }
+
         this.lifelines['audience'] = false;
         this.els.lifelineBtns['audience'].classList.add('used');
         this.els.lifelineBtns['audience'].disabled = true;
 
-        let correctIndex = this.correctShuffledIndex;
-
-        // Generate percentages
+        // Calculate Percentages
         let percentages = [0, 0, 0, 0];
-        // Give correct answer high prob (e.g., 60-90%)
-        let correctProb = Math.floor(Math.random() * 30) + 60; // 60-90
+        let correctProb = Math.floor(Math.random() * 15) + 70; // 70-85% for clarity
         percentages[correctIndex] = correctProb;
 
         let remaining = 100 - correctProb;
-        for (let i = 0; i < 4; i++) {
-            if (i === correctIndex) continue;
-            let p = Math.floor(Math.random() * remaining);
-            percentages[i] = p;
-            remaining -= p;
-        }
-        // Add remainder to last zero
-        percentages[percentages.indexOf(0)] += remaining;
+        let others = [0, 1, 2, 3].filter(i => i !== correctIndex);
+        this.shuffle(others);
+
+        let p1 = Math.floor(Math.random() * (remaining - 5));
+        percentages[others[0]] = p1;
+        remaining -= p1;
+
+        let p2 = Math.floor(Math.random() * remaining);
+        percentages[others[1]] = p2;
+        percentages[others[2]] = remaining - p2;
+
+        console.log("[DEBUG] Generated Percentages:", percentages);
+
+        // Reset UI before showing
+        Object.values(this.els.audienceBars).forEach(bar => {
+            if (bar) bar.style.height = '0%';
+        });
+        Object.values(this.els.audiencePercents).forEach(p => {
+            if (p) {
+                p.textContent = '0%';
+                p.classList.remove('visible');
+            }
+        });
 
         // Show Modal
-        this.els.audienceBars.A.style.height = percentages[0] + '%';
-        this.els.audienceBars.B.style.height = percentages[1] + '%';
-        this.els.audienceBars.C.style.height = percentages[2] + '%';
-        this.els.audienceBars.D.style.height = percentages[3] + '%';
-
         this.els.audienceModal.classList.remove('hidden');
+
+        // Trigger animation after a slight delay to ensure the modal is rendered
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const keys = ['A', 'B', 'C', 'D'];
+                keys.forEach((key, idx) => {
+                    const bar = this.els.audienceBars[key];
+                    const pText = this.els.audiencePercents[key];
+                    const val = percentages[idx];
+
+                    if (bar) {
+                        bar.style.height = val + '%';
+                        console.log(`[DEBUG] Animating Bar ${key} to ${val}%`);
+                    }
+                    if (pText) {
+                        pText.textContent = val + '%';
+                        pText.classList.add('visible');
+                    }
+                });
+            }, 50);
+        });
     }
 
     getCorrectIndex(q) {

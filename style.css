@@ -8,6 +8,9 @@
     --wrong-red: #dc3545;
     --btn-gradient: linear-gradient(180deg, #1e3c72 0%, #2a5298 100%);
     --btn-border: 2px solid #5c7cfa;
+    --bg-gradient: radial-gradient(circle at center, #1a1a3a 0%, #000000 100%);
+    --bg-dark: #0a0a1a;
+    --gradient-gold: linear-gradient(135deg, #d4af37 0%, #f7e290 50%, #d4af37 100%);
 }
 
 * {
@@ -19,14 +22,14 @@
 }
 
 body {
-    background-color: var(--bg-color);
+    background-color: var(--bg-dark);
     color: var(--text-white);
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     overflow: hidden;
-    background: radial-gradient(circle at center, #1a1a3a 0%, #000000 100%);
+    background: var(--bg-gradient);
 }
 
 .app-container {
@@ -37,7 +40,9 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    align-items: center;
     padding: 20px;
+    margin: 0 auto;
 }
 
 .screen {
@@ -45,13 +50,21 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
     height: 100%;
     justify-content: center;
     animation: fadeIn 0.5s ease-in-out;
+    text-align: center;
 }
 
 .screen.active {
     display: flex;
+}
+
+/* Ensure children don't shrink in flex containers */
+.screen>* {
+    flex-shrink: 0;
 }
 
 /* Start Screen */
@@ -243,6 +256,11 @@ body {
     align-items: center;
 }
 
+.millionaire-btn.mini {
+    padding: 5px 15px;
+    font-size: 0.9rem;
+}
+
 .option-btn:hover {
     background: linear-gradient(90deg, transparent 0%, #000 10%, #1b3a6b 50%, #000 90%, transparent 100%);
     border-color: var(--accent-gold);
@@ -334,26 +352,63 @@ body {
     text-align: center;
 }
 
+.next-prize-info {
+    font-size: 1.5rem;
+    color: var(--accent-gold-light);
+    margin: 15px 0;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(247, 226, 144, 0.5);
+}
+
 .graph-container {
     display: flex;
     justify-content: space-around;
-    height: 200px;
+    height: 220px;
+    /* Slightly taller for percentages */
     align-items: flex-end;
     margin: 20px 0;
+    padding: 20px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(184, 134, 11, 0.2);
 }
 
 .bar-group {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 15%;
+    width: 20%;
+    height: 100%;
+    justify-content: flex-end;
 }
 
 .bar {
-    width: 100%;
-    background: var(--accent-gold);
+    width: 35px;
+    /* Fixed width for better visibility */
+    background: linear-gradient(to top, var(--accent-gold), rgba(247, 226, 144, 0.9));
     margin-bottom: 5px;
-    transition: height 1s ease-out;
+    height: 0;
+    transition: height 3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    box-shadow: 0 0 15px var(--accent-gold);
+    border-radius: 4px 4px 0 0;
+}
+
+.percent-text {
+    font-size: 1rem;
+    color: var(--accent-gold-light);
+    margin-bottom: 8px;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.5s ease-in;
+}
+
+.percent-text.visible {
+    opacity: 1;
+}
+
+.bar-label {
+    font-weight: bold;
+    color: var(--accent-gold);
 }
 
 /* Quiz Layout */
@@ -363,21 +418,33 @@ body {
     height: 100%;
     position: relative;
     justify-content: center;
+    align-items: center;
+    padding: 0;
 }
 
 .score-table {
+    display: none;
+    /* Hidden by default */
     position: absolute;
     right: 20px;
-    top: 70px;
+    top: 60px;
     /* Below top-bar */
-    width: 180px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid var(--accent-gold);
-    display: flex;
+    width: 200px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid var(--accent-gold);
     flex-direction: column-reverse;
-    padding: 10px;
-    border-radius: 5px;
-    z-index: 10;
+    padding: 15px;
+    border-radius: 10px;
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.score-table.visible {
+    display: flex;
+}
+
+.score-table.visible {
+    display: flex;
 }
 
 .score-row {
@@ -408,11 +475,10 @@ body {
 .quiz-content-area {
     width: 100%;
     max-width: 1000px;
-    /* Wider quiz area */
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
 }
 
 .unit-tag {
@@ -617,4 +683,249 @@ body {
         display: none;
         /* Hide floating table on small mobile */
     }
+}
+
+/* Shop Styles */
+.shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    border-bottom: 2px solid var(--accent-gold);
+    padding-bottom: 15px;
+    text-align: center;
+}
+
+.shop-header h2 {
+    margin: 0;
+    font-size: 2.5rem;
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.total-prize-display {
+    font-size: 1.4rem;
+    color: var(--accent-gold-light);
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(247, 226, 144, 0.6);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 5px 15px;
+    border-radius: 20px;
+    border: 1px solid var(--accent-gold);
+}
+
+/* Tabs removed */
+
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 20px;
+    justify-items: center;
+    width: 100%;
+}
+
+/* Custom Scrollbar for Item Grid */
+.item-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.item-grid::-webkit-scrollbar-thumb {
+    background: var(--accent-gold);
+    border-radius: 10px;
+}
+
+.shop-item-card {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(247, 226, 144, 0.2);
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 320px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+}
+
+.shop-item-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: 0.5s;
+}
+
+.shop-item-card:hover::before {
+    left: 100%;
+}
+
+.shop-item-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--accent-gold);
+    box-shadow: 0 15px 30px rgba(212, 175, 55, 0.2);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.item-icon {
+    font-size: 3.5rem;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+}
+
+.item-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: white;
+}
+
+.item-price {
+    color: var(--accent-gold-light);
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.item-desc {
+    font-size: 0.9rem;
+    color: #bbb;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.buy-btn {
+    background: var(--gradient-gold);
+    color: var(--bg-dark);
+    border: none;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.buy-btn:hover:not(:disabled) {
+    filter: brightness(1.2);
+    box-shadow: 0 0 10px var(--accent-gold);
+}
+
+.buy-btn:disabled {
+    background: #444;
+    color: #777;
+    cursor: not-allowed;
+    border: 1px solid #555;
+}
+
+.buy-btn.owned {
+    background: transparent;
+    border: 2px solid var(--accent-gold);
+    color: var(--accent-gold);
+}
+
+.buy-btn.active-item {
+    background: var(--gradient-gold);
+    color: var(--bg-dark);
+    border: none;
+    box-shadow: 0 0 15px var(--accent-gold);
+}
+
+
+/* Custom Themes */
+body.theme-gold {
+    --bg-dark: #2a2000;
+    --accent-gold: #ffd700;
+    --accent-gold-light: #fffacd;
+    --bg-gradient: radial-gradient(circle at center, #4d3d00 0%, #2a2000 100%);
+}
+
+body.theme-darknight {
+    --bg-dark: #0a0a20;
+    --accent-gold: #8a2be2;
+    --accent-gold-light: #e0b0ff;
+    --bg-gradient: radial-gradient(circle at center, #2e004d 0%, #0a0a20 100%);
+}
+
+body.theme-cyber {
+    --bg-dark: #000428;
+    --accent-gold: #00f2ff;
+    --accent-gold-light: #ff00de;
+    --bg-gradient: linear-gradient(135deg, #000428 0%, #004e92 100%);
+}
+
+body.theme-rose {
+    --bg-dark: #1a0505;
+    --accent-gold: #ffd700;
+    --accent-gold-light: #ff6b6b;
+    --bg-gradient: radial-gradient(circle at center, #4a0000 0%, #1a0505 100%);
+}
+
+body.theme-ocean {
+    --bg-dark: #001f3f;
+    --accent-gold: #39cccc;
+    --accent-gold-light: #7fdbff;
+    --bg-gradient: radial-gradient(circle at center, #004e92 0%, #001f3f 100%);
+}
+
+body.theme-forest {
+    --bg-dark: #0a2f0a;
+    --accent-gold: #2ecc71;
+    --accent-gold-light: #a3e635;
+    --bg-gradient: radial-gradient(circle at center, #145a32 0%, #0a2f0a 100%);
+}
+
+body.theme-sunset {
+    --bg-dark: #2c0e1d;
+    --accent-gold: #ff9f43;
+    --accent-gold-light: #feca57;
+    --bg-gradient: linear-gradient(to bottom, #2c0e1d, #6d214f, #b33939);
+}
+
+body.theme-sakura {
+    --bg-dark: #1a0a1a;
+    --accent-gold: #ffb7c5;
+    --accent-gold-light: #fff0f5;
+    --bg-gradient: radial-gradient(circle at center, #4b0082 0%, #1a0a1a 100%);
+}
+
+body.theme-galaxy {
+    --bg-dark: #050510;
+    --accent-gold: #7b68ee;
+    --accent-gold-light: #e6e6fa;
+    --bg-gradient: radial-gradient(circle at 30% 30%, #1a1a4d 0%, #050510 100%);
+}
+
+body.theme-volcano {
+    --bg-dark: #1a0505;
+    --accent-gold: #ff4500;
+    --accent-gold-light: #ffd700;
+    --bg-gradient: radial-gradient(circle at bottom, #8b0000 0%, #1a0505 100%);
+}
+
+body.theme-snow {
+    --bg-dark: #0a1a2a;
+    --accent-gold: #00bfff;
+    --accent-gold-light: #f0f8ff;
+    --bg-gradient: linear-gradient(180deg, #1a2a3a 0%, #0a1a2a 100%);
+}
+
+body.theme-marble {
+    --bg-dark: #1a1a1a;
+    --accent-gold: #dcdcdc;
+    --accent-gold-light: #ffffff;
+    --bg-gradient: linear-gradient(45deg, #1a1a1a 0%, #333333 100%);
 }
