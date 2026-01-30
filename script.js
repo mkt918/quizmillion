@@ -3,7 +3,7 @@ class QuizApp {
         this.questions = [];
         this.currentQuestionIndex = 0;
         this.score = 0;
-        this.quizDataUrl = 'data/quiz_data.csv'; // Local path, can be replaced with Google Sheet URL
+        this.quizDataUrl = 'data/2025_jo03.csv'; // New question set for junior high students // Local path, can be replaced with Google Sheet URL
 
         // Lifeline states
         this.lifelines = {
@@ -38,6 +38,7 @@ class QuizApp {
             historyList: document.getElementById('history-list'),
             unitList: document.getElementById('unit-selection-list'),
             unitError: document.getElementById('unit-error'),
+            unitCount: document.getElementById('total-selected-questions'),
             options: Array.from(document.querySelectorAll('.option-btn')),
             lifelineBtns: {
                 '5050': document.getElementById('lifeline-5050'),
@@ -132,16 +133,15 @@ class QuizApp {
             // Handle CSV parsing carefully (simpler split for now, assuming no commas in fields)
             // A more robust regex splitter would be better for complex CSVs
             const row = lines[i].split(',');
-            if (row.length < 7) continue;
+            if (row.length < 4) continue;
 
             const q = {
                 id: row[0],
                 unit: (row[1] || "").trim(),
                 text: row[2],
-                options: [row[3], row[4], row[5], row[6]],
-                answer: row[7].trim(), // Text or Index (1-4) or A-D
-                image: row[8] ? row[8].trim() : '',
-                explanation: row[9] ? row[9].trim() : ''
+                correctAnswer: (row[3] || "").trim(),
+                image: row[4],
+                explanation: row[5] ? row[5].trim() : ''
             };
             if (q.text) questions.push(q);
         }
@@ -165,15 +165,25 @@ class QuizApp {
             btn.onclick = () => {
                 btn.classList.toggle('selected');
                 this.els.unitError.classList.add('hidden');
+                this.updateUnitCount();
             };
             this.els.unitList.appendChild(btn);
         });
+        this.updateUnitCount();
+    }
+
+    updateUnitCount() {
+        const selectedBtns = this.els.unitList.querySelectorAll('.unit-select-btn.selected');
+        const selectedUnits = Array.from(selectedBtns).map(btn => btn.textContent);
+        const count = this.questions.filter(q => selectedUnits.includes(q.unit)).length;
+        this.els.unitCount.textContent = `選択された問題数: ${count}問`;
     }
 
     selectAllUnits() {
         const btns = this.els.unitList.querySelectorAll('.unit-select-btn');
         btns.forEach(btn => btn.classList.add('selected'));
         this.els.unitError.classList.add('hidden');
+        this.updateUnitCount();
     }
 
     confirmUnits() {
@@ -236,12 +246,45 @@ class QuizApp {
 
         this.renderScoreTable();
 
-        const originalOptions = q.options.map((text, idx) => ({ text, originalIdx: idx }));
-        const map = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-        let correctOriginalIdx = map[q.answer] !== undefined ? map[q.answer] : 0;
+        // --- Dynamic Distractor Generation (Simplified CSV) ---
+        const correctText = q.correctAnswer;
 
-        this.shuffledOptions = this.shuffle([...originalOptions]);
-        this.correctShuffledIndex = this.shuffledOptions.findIndex(opt => opt.originalIdx === correctOriginalIdx);
+        // Find all other correct answers from the same unit
+        let sameUnitCorrects = [...new Set(
+            this.questions
+                .filter(item => item.unit === q.unit && item.id !== q.id)
+                .map(item => item.correctAnswer)
+                .filter(text => text !== correctText)
+        )];
+
+        // If not enough unique same-unit distractors, fallback to other units
+        if (sameUnitCorrects.length < 3) {
+            const others = [...new Set(
+                this.questions
+                    .filter(item => item.id !== q.id)
+                    .map(item => item.correctAnswer)
+                    .filter(text => text !== correctText)
+            )];
+            sameUnitCorrects = [...new Set([...sameUnitCorrects, ...others])];
+        }
+
+        // Shuffle and pick 3 distractors
+        this.shuffle(sameUnitCorrects);
+        const distractors = sameUnitCorrects.slice(0, 3);
+
+        // Combine correct answer and distractors
+        const allOptions = [
+            { text: correctText, isCorrect: true },
+            ...distractors.map(text => ({ text, isCorrect: false }))
+        ];
+
+        // Fallback if still not enough (though unlikely with 20 questions)
+        while (allOptions.length < 4) {
+            allOptions.push({ text: "???", isCorrect: false });
+        }
+
+        this.shuffledOptions = this.shuffle([...allOptions]);
+        this.correctShuffledIndex = this.shuffledOptions.findIndex(opt => opt.isCorrect);
 
         if (q.image) {
             this.els.questionImage.src = `assets/images/${q.image}`;

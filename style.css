@@ -476,6 +476,14 @@ body {
     font-weight: bold;
 }
 
+.count-display {
+    color: var(--accent-gold-light);
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(247, 226, 144, 0.3);
+}
+
 .selection-controls {
     display: flex;
     gap: 10px;
