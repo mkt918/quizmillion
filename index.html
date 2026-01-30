@@ -17,7 +17,40 @@
         <div id="start-screen" class="screen active">
             <h1 class="game-title">MILLIONAIRE<br>QUIZ</h1>
             <button id="start-btn" class="millionaire-btn">START</button>
-            <button id="review-btn" class="millionaire-btn secondary">復習モード</button>
+            <button id="review-menu-btn" class="millionaire-btn secondary">復習モード</button>
+            <button id="history-menu-btn" class="millionaire-btn secondary">履歴を見る</button>
+        </div>
+
+        <!-- Review Selection Screen -->
+        <div id="review-selection-screen" class="screen">
+            <h2>復習する問題を選んでください</h2>
+            <div id="review-list" class="item-list">
+                <!-- Loaded via JS -->
+            </div>
+            <button id="review-back-btn" class="millionaire-btn secondary">戻る</button>
+        </div>
+
+        <!-- Unit Selection Screen -->
+        <div id="unit-selection-screen" class="screen">
+            <h2>出題する単元を選んでください</h2>
+            <div id="unit-selection-list" class="unit-grid">
+                <!-- Loaded via JS -->
+            </div>
+            <div id="unit-error" class="error-message hidden">単元を一つ以上選択してください。</div>
+            <div class="selection-controls">
+                <button id="select-all-units-btn" class="millionaire-btn secondary small">すべて選択</button>
+                <button id="confirm-units-btn" class="millionaire-btn">開始</button>
+                <button id="unit-selection-back-btn" class="millionaire-btn secondary small">戻る</button>
+            </div>
+        </div>
+
+        <!-- History Screen -->
+        <div id="history-screen" class="screen">
+            <h2>過去のリザルト</h2>
+            <div id="history-list" class="card-list">
+                <!-- Loaded via JS -->
+            </div>
+            <button id="history-back-btn" class="millionaire-btn secondary">戻る</button>
         </div>
 
         <!-- Quiz Screen -->
@@ -33,6 +66,7 @@
                 </div>
 
                 <div class="quiz-content-area">
+                    <div id="unit-display" class="unit-tag"></div>
                     <div class="lifelines">
                         <button id="lifeline-5050" class="lifeline-btn" title="50:50">50:50</button>
                         <button id="lifeline-phone" class="lifeline-btn" title="Phone">📞</button>
@@ -64,9 +98,13 @@
 
         <!-- Result Screen -->
         <div id="result-screen" class="screen">
-            <h2>GAME OVER</h2>
-            <div class="final-score">Score: <span id="final-score-val">0</span> / 20</div>
+            <h2 id="result-header">GAME OVER</h2>
+            <div class="final-score">獲得賞金: <span id="final-score-val">0</span>円</div>
             <p id="result-message"></p>
+            <div id="result-mistakes-area" class="mistakes-log hidden">
+                <h3>間違えた問題:</h3>
+                <ul id="result-mistakes-list"></ul>
+            </div>
             <button id="retry-btn" class="millionaire-btn">TRY AGAIN</button>
             <button id="home-btn" class="millionaire-btn secondary">HOME</button>
         </div>
