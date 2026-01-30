@@ -104,11 +104,12 @@ class QuizApp {
 
             questions.push({
                 id: row[0],
-                text: row[1],
-                options: [row[2], row[3], row[4], row[5]],
-                answer: row[6].trim(), // Text or Index (1-4) or A-D
-                image: row[7] ? row[7].trim() : '',
-                explanation: row[8] ? row[8].trim() : ''
+                unit: row[1],
+                text: row[2],
+                options: [row[3], row[4], row[5], row[6]],
+                answer: row[7].trim(), // Text or Index (1-4) or A-D
+                image: row[8] ? row[8].trim() : '',
+                explanation: row[9] ? row[9].trim() : ''
             });
         }
         return questions;
@@ -329,8 +330,7 @@ class QuizApp {
         this.els.lifelineBtns['5050'].classList.add('used');
         this.els.lifelineBtns['5050'].disabled = true;
 
-        const q = this.currentQuizSet[this.currentQuestionIndex];
-        let correctIndex = this.getCorrectIndex(q);
+        let correctIndex = this.correctShuffledIndex;
 
         // Find wrong indices
         let wrongIndices = [0, 1, 2, 3].filter(i => i !== correctIndex);
@@ -347,9 +347,7 @@ class QuizApp {
         this.els.lifelineBtns['phone'].classList.add('used');
         this.els.lifelineBtns['phone'].disabled = true;
 
-        const q = this.currentQuizSet[this.currentQuestionIndex];
-        let correctIndex = this.getCorrectIndex(q);
-        const correctText = q.options[correctIndex];
+        const correctText = this.shuffledOptions[this.correctShuffledIndex].text;
 
         alert(`電話の相手: 「たぶん、${correctText} だと思うよ！」`);
     }
@@ -360,8 +358,7 @@ class QuizApp {
         this.els.lifelineBtns['audience'].classList.add('used');
         this.els.lifelineBtns['audience'].disabled = true;
 
-        const q = this.currentQuizSet[this.currentQuestionIndex];
-        let correctIndex = this.getCorrectIndex(q);
+        let correctIndex = this.correctShuffledIndex;
 
         // Generate percentages
         let percentages = [0, 0, 0, 0];

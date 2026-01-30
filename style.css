@@ -16,7 +16,6 @@
     padding: 0;
     font-family: 'Noto Sans JP', 'Roboto', sans-serif;
     user-select: none;
-    /* Prevent text selection */
 }
 
 body {
@@ -32,9 +31,8 @@ body {
 
 .app-container {
     width: 100%;
-    max-width: 800px;
+    max-width: 1400px;
     height: 100vh;
-    /* Mobile fit */
     position: relative;
     display: flex;
     flex-direction: column;
@@ -188,7 +186,6 @@ body {
     margin-bottom: 10px;
     border: 2px solid var(--accent-gold);
     display: none;
-    /* shown via JS */
 }
 
 .image-container.hidden {
@@ -213,8 +210,10 @@ body {
 }
 
 .question-box p {
-    font-size: 1.5rem;
+    font-size: 2.2rem;
+    /* Make question text larger */
     line-height: 1.4;
+    font-weight: bold;
 }
 
 /* Options Grid */
@@ -229,10 +228,13 @@ body {
 .option-btn {
     background: linear-gradient(90deg, transparent 0%, #000 10%, #102a4f 50%, #000 90%, transparent 100%);
     border: 2px solid #5c7cfa;
-    border-radius: 30px;
-    padding: 15px 40px;
+    border-radius: 40px;
+    /* Slightly rounder */
+    padding: 20px 50px;
+    /* Larger padding */
     color: white;
-    font-size: 1.2rem;
+    font-size: 1.6rem;
+    /* Larger text */
     cursor: pointer;
     text-align: left;
     position: relative;
@@ -270,7 +272,7 @@ body {
 
 .option-label {
     color: var(--accent-gold);
-    margin-right: 15px;
+    margin-right: 20px;
     font-weight: bold;
 }
 
@@ -359,21 +361,23 @@ body {
     display: flex;
     width: 100%;
     height: 100%;
-    gap: 20px;
-    align-items: stretch;
     position: relative;
+    justify-content: center;
 }
 
 .score-table {
-    width: 200px;
-    background: rgba(0, 0, 0, 0.7);
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 180px;
+    background: rgba(0, 0, 0, 0.85);
     border: 1px solid var(--accent-gold);
     display: flex;
     flex-direction: column-reverse;
     padding: 10px;
     border-radius: 5px;
-    height: fit-content;
-    align-self: center;
+    z-index: 10;
 }
 
 .score-row {
@@ -402,14 +406,13 @@ body {
 }
 
 .quiz-content-area {
-    flex: 1;
+    width: 100%;
+    max-width: 1000px;
+    /* Wider quiz area */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    max-width: 900px;
-    /* Limit center width for readability but keep it wide */
-    width: 100%;
 }
 
 /* Animations */
@@ -457,5 +460,10 @@ body {
 
     .question-box p {
         font-size: 1.2rem;
+    }
+
+    .score-table {
+        display: none;
+        /* Hide floating table on small mobile */
     }
 }
