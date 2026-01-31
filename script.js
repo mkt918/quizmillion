@@ -1,14 +1,18 @@
 class QuizApp {
     constructor() {
+        // Initialize Managers
+        this.storage = new StorageManager();
+        this.audioManager = new AudioManager();
+
         this.questions = [];
         this.currentQuestionIndex = 0;
         this.score = 0;
         this.quizDataUrl = 'data/2025_jo03.csv'; // New question set for junior high students
 
         // Shop State
-        this.totalPrize = parseInt(localStorage.getItem('quizTotalPrize')) || 1000000000;
-        this.ownedItems = JSON.parse(localStorage.getItem('quizOwnedItems')) || ['default-theme'];
-        this.activeTheme = localStorage.getItem('quizActiveTheme') || 'default-theme';
+        this.totalPrize = this.storage.getTotalPrize();
+        this.ownedItems = this.storage.getOwnedItems();
+        this.activeTheme = this.storage.getActiveTheme();
 
         this.shopItems = [
             { id: 'default-theme', category: 'theme', name: 'デフォルトブルー', price: 0, desc: '標準的なミリオネアブルー', icon: '💎' },
@@ -26,16 +30,9 @@ class QuizApp {
             { id: 'theme-marble', category: 'theme', name: 'マーブルラグジュアリー', price: 500000000, desc: '最高級大理石の質感', icon: '🏛️' }
         ];
 
-        // Lifeline states
-        this.lifelines = {
-            '5050': true,
-            'phone': true,
-            'audience': true
-        };
-
         this.isReviewMode = false;
-        this.mistakes = JSON.parse(localStorage.getItem('quizMillionaireMistakes')) || [];
-        this.history = JSON.parse(localStorage.getItem('quizMillionaireHistory')) || [];
+        this.mistakes = this.storage.getMistakes();
+        this.history = this.storage.getHistory();
 
         // DOM Elements
         this.screens = {
@@ -97,8 +94,8 @@ class QuizApp {
             15000000, 25000000, 50000000, 75000000, 100000000
         ];
 
-        this.isMuted = true; // User requested audio to be muted by default
-        this.bgmOscillators = [];
+        // Initialize LifelineManager after els is defined
+        this.lifelineManager = new LifelineManager(this.els);
 
         this.applyTheme(this.activeTheme);
         this.initEventListeners();
@@ -118,7 +115,7 @@ class QuizApp {
     initEventListeners() {
         document.getElementById('start-btn').onclick = () => this.showUnitSelection();
         document.getElementById('review-menu-btn').onclick = () => {
-            this.initAudio();
+            this.audioManager.init();
             this.showReviewSelection();
         };
         document.getElementById('history-menu-btn').onclick = () => this.showHistory();
@@ -135,7 +132,7 @@ class QuizApp {
             }
         };
         document.getElementById('home-btn').onclick = () => {
-            this.stopBGM();
+            this.audioManager.stopBGM();
             this.showScreen('start');
         };
         document.getElementById('next-question-btn').onclick = () => this.nextQuestion();
@@ -158,9 +155,18 @@ class QuizApp {
         });
 
         // Lifelines
-        this.els.lifelineBtns['5050'].addEventListener('click', () => this.use5050());
-        this.els.lifelineBtns['phone'].addEventListener('click', () => this.usePhone());
-        this.els.lifelineBtns['audience'].addEventListener('click', () => this.useAudience());
+        this.els.lifelineBtns['5050'].addEventListener('click', () => {
+            this.lifelineManager.use5050(this.correctShuffledIndex, this.els.options);
+        });
+        this.els.lifelineBtns['phone'].addEventListener('click', () => {
+            this.lifelineManager.usePhone(this.currentQuizSet[this.currentQuestionIndex]);
+        });
+        this.els.lifelineBtns['audience'].addEventListener('click', () => {
+            const recalcIndex = this.lifelineManager.useAudience(this.correctShuffledIndex, this.shuffledOptions);
+            if (recalcIndex !== this.correctShuffledIndex) {
+                this.correctShuffledIndex = recalcIndex;
+            }
+        });
     }
 
     async loadQuestions() {
@@ -175,7 +181,6 @@ class QuizApp {
         }
     }
 
-    // --- Shop Methods ---
     // --- Shop Methods ---
     showShop() {
         this.showScreen('shop');
@@ -224,15 +229,14 @@ class QuizApp {
         if (this.totalPrize >= item.price) {
             this.totalPrize -= item.price;
             this.ownedItems.push(item.id);
-            localStorage.setItem('quizOwnedItems', JSON.stringify(this.ownedItems));
-
-            localStorage.setItem('quizTotalPrize', this.totalPrize);
+            this.storage.saveOwnedItems(this.ownedItems);
+            this.storage.saveTotalPrize(this.totalPrize);
 
             // Auto-apply purchased theme
             this.applyTheme(item.id);
 
             this.showShop(); // Refresh UI
-            this.playSFX('correct');
+            this.audioManager.playSFX('correct');
         }
     }
 
@@ -243,8 +247,8 @@ class QuizApp {
         }
 
         this.activeTheme = themeId;
-        localStorage.setItem('quizActiveTheme', themeId);
-        this.playSFX('correct');
+        this.storage.saveActiveTheme(themeId);
+        this.audioManager.playSFX('correct');
     }
 
     showScreen(screenId) {
@@ -306,9 +310,9 @@ class QuizApp {
 
 
     showUnitSelection() {
-        this.initAudio();
-        this.resumeAudioContext();
-        this.playBGM('main');
+        this.audioManager.init();
+        this.audioManager.resumeContext();
+        this.audioManager.playBGM('main');
 
         this.showScreen('units');
         this.els.unitList.innerHTML = '';
@@ -356,15 +360,15 @@ class QuizApp {
     }
 
     startQuiz(reviewMode = false, specificQuestionId = null, selectedUnits = null) {
-        if (!this.audioCtx) this.initAudio();
-        this.resumeAudioContext();
-        this.playBGM('main');
+        if (!this.audioManager.audioCtx) this.audioManager.init();
+        this.audioManager.resumeContext();
+        this.audioManager.playBGM('main');
 
         this.isReviewMode = reviewMode;
         this.currentQuestionIndex = 0;
         this.score = 0;
         this.sessionMistakes = []; // Mistakes in THIS session
-        this.resetLifelines();
+        this.lifelineManager.reset();
 
         let quizSet = [...this.questions];
 
@@ -385,7 +389,7 @@ class QuizApp {
         if (this.currentQuizSet.length === 0) {
             console.error("Quiz set is empty. Initial questions length:", this.questions.length);
             alert("問題が見つかりませんでした。選択したカテゴリー、またはデータファイルを確認してください。");
-            this.stopBGM();
+            this.audioManager.stopBGM();
             return;
         }
 
@@ -538,7 +542,7 @@ class QuizApp {
     }
 
     onCorrect(btn) {
-        this.playSFX('correct');
+        this.audioManager.playSFX('correct');
         btn.classList.add('correct');
         this.score++;
 
@@ -546,7 +550,7 @@ class QuizApp {
         const qId = this.currentQuizSet[this.currentQuestionIndex].id;
         if (this.isReviewMode) {
             this.mistakes = this.mistakes.filter(id => id !== qId);
-            localStorage.setItem('quizMillionaireMistakes', JSON.stringify(this.mistakes));
+            this.storage.saveMistakes(this.mistakes);
         }
 
         setTimeout(() => {
@@ -555,7 +559,7 @@ class QuizApp {
     }
 
     onWrong(btn, correctIndex) {
-        this.playSFX('wrong');
+        this.audioManager.playSFX('wrong');
         btn.classList.add('wrong');
         // Blink correct answer
         if (correctIndex >= 0 && correctIndex < 4) {
@@ -566,7 +570,7 @@ class QuizApp {
         const qId = this.currentQuizSet[this.currentQuestionIndex].id;
         if (!this.mistakes.includes(qId)) {
             this.mistakes.push(qId);
-            localStorage.setItem('quizMillionaireMistakes', JSON.stringify(this.mistakes));
+            this.storage.saveMistakes(this.mistakes);
         }
         this.sessionMistakes.push(qId); // Track for this session
 
@@ -621,7 +625,7 @@ class QuizApp {
     }
 
     showResult() {
-        this.stopBGM();
+        this.audioManager.stopBGM();
 
         if (this.isReviewMode) {
             this.showReviewSelection();
@@ -667,11 +671,11 @@ class QuizApp {
             mistakeIds: [...this.sessionMistakes]
         };
         this.history.unshift(result);
-        localStorage.setItem('quizMillionaireHistory', JSON.stringify(this.history.slice(0, 50)));
+        this.storage.saveHistory(this.history);
 
         // --- Shop Update: Add Prize to Total Prize ---
         this.totalPrize += finalPrize;
-        localStorage.setItem('quizTotalPrize', this.totalPrize);
+        this.storage.saveTotalPrize(this.totalPrize);
     }
 
     showReviewSelection() {
@@ -732,265 +736,12 @@ class QuizApp {
         });
     }
 
-    showScreen(screenName) {
-        Object.values(this.screens).forEach(el => el.classList.remove('active'));
-        this.screens[screenName].classList.add('active');
-    }
-
-    // --- Lifelines ---
-
-    resetLifelines() {
-        this.lifelines = { '5050': true, 'phone': true, 'audience': true };
-        Object.values(this.els.lifelineBtns).forEach(btn => {
-            btn.disabled = false;
-            btn.classList.remove('used');
-        });
-    }
-
-    use5050() {
-        if (!this.lifelines['5050']) return;
-        this.lifelines['5050'] = false;
-        this.els.lifelineBtns['5050'].classList.add('used');
-        this.els.lifelineBtns['5050'].disabled = true;
-
-        let correctIndex = this.correctShuffledIndex;
-
-        // Find wrong indices
-        let wrongIndices = [0, 1, 2, 3].filter(i => i !== correctIndex);
-        this.shuffle(wrongIndices);
-
-        // Hide 2 wrong options with staggered delay
-        setTimeout(() => {
-            this.els.options[wrongIndices[0]].style.opacity = '0';
-            setTimeout(() => {
-                this.els.options[wrongIndices[0]].classList.add('hidden');
-            }, 800);
-        }, 500);
-
-        setTimeout(() => {
-            this.els.options[wrongIndices[1]].style.opacity = '0';
-            setTimeout(() => {
-                this.els.options[wrongIndices[1]].classList.add('hidden');
-            }, 800);
-        }, 1500);
-    }
-
-    usePhone() {
-        if (!this.lifelines['phone']) return;
-        this.lifelines['phone'] = false;
-        this.els.lifelineBtns['phone'].classList.add('used');
-        this.els.lifelineBtns['phone'].disabled = true;
-
-        const q = this.currentQuizSet[this.currentQuestionIndex];
-        const hint = q.explanation || "うーん、少し難しいですね...でも、落ち着いて考えれば分かるはずです！";
-
-        if (this.els.phoneHintArea) {
-            this.els.phoneHintText.textContent = hint;
-            this.els.phoneHintArea.classList.remove('hidden');
-        } else {
-            alert(`電話の相手: 「${hint}」`);
-        }
-    }
-
-    useAudience() {
-        if (!this.lifelines['audience']) return;
-
-        let correctIndex = this.correctShuffledIndex;
-        console.log("[DEBUG] Audience Lifeline Triggered");
-        console.log("[DEBUG] Correct Shuffled Index:", correctIndex);
-
-        if (correctIndex === undefined || correctIndex === -1) {
-            console.warn("[DEBUG] correctShuffledIndex was -1. Emergency recalc...");
-            correctIndex = this.shuffledOptions.findIndex(opt => opt.isCorrect);
-            this.correctShuffledIndex = correctIndex;
-        }
-
-        if (correctIndex === -1) {
-            console.error("[DEBUG] Failed to identify correct answer index for Audience!");
-            return;
-        }
-
-        this.lifelines['audience'] = false;
-        this.els.lifelineBtns['audience'].classList.add('used');
-        this.els.lifelineBtns['audience'].disabled = true;
-
-        // Calculate Percentages
-        let percentages = [0, 0, 0, 0];
-        let correctProb = Math.floor(Math.random() * 15) + 70; // 70-85% for clarity
-        percentages[correctIndex] = correctProb;
-
-        let remaining = 100 - correctProb;
-        let others = [0, 1, 2, 3].filter(i => i !== correctIndex);
-        this.shuffle(others);
-
-        let p1 = Math.floor(Math.random() * (remaining - 5));
-        percentages[others[0]] = p1;
-        remaining -= p1;
-
-        let p2 = Math.floor(Math.random() * remaining);
-        percentages[others[1]] = p2;
-        percentages[others[2]] = remaining - p2;
-
-        console.log("[DEBUG] Generated Percentages:", percentages);
-
-        // Reset UI before showing
-        Object.values(this.els.audienceBars).forEach(bar => {
-            if (bar) bar.style.height = '0%';
-        });
-        Object.values(this.els.audiencePercents).forEach(p => {
-            if (p) {
-                p.textContent = '0%';
-                p.classList.remove('visible');
-            }
-        });
-
-        // Show Modal
-        this.els.audienceModal.classList.remove('hidden');
-
-        // Trigger animation after a slight delay to ensure the modal is rendered
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                const keys = ['A', 'B', 'C', 'D'];
-                keys.forEach((key, idx) => {
-                    const bar = this.els.audienceBars[key];
-                    const pText = this.els.audiencePercents[key];
-                    const val = percentages[idx];
-
-                    if (bar) {
-                        bar.style.height = val + '%';
-                        console.log(`[DEBUG] Animating Bar ${key} to ${val}%`);
-                    }
-                    if (pText) {
-                        pText.textContent = val + '%';
-                        pText.classList.add('visible');
-                    }
-                });
-            }, 50);
-        });
-    }
-
-    getCorrectIndex(q) {
-        let correctIndex = -1;
-        correctIndex = q.options.indexOf(q.answer);
-        if (correctIndex === -1) {
-            const map = { 'A': 0, 'B': 1, 'C': 2, 'D': 3, '1': 0, '2': 1, '3': 2, '4': 3 };
-            if (map[q.answer] !== undefined) correctIndex = map[q.answer];
-        }
-        if (correctIndex === -1) {
-            correctIndex = q.options.findIndex(opt => opt.trim() === q.answer.trim());
-        }
-        return correctIndex;
-    }
-
     shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
-    }
-
-    // --- Audio System (Web Audio API) ---
-
-    initAudio() {
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        this.bgmOscillators = [];
-        this.isMuted = true;
-    }
-
-    playTone(freq, type, duration, startTime = 0, vol = 0.1) {
-        if (this.isMuted) return;
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime + startTime);
-
-        gain.gain.setValueAtTime(vol, this.audioCtx.currentTime + startTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + startTime + duration);
-
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-
-        osc.start(this.audioCtx.currentTime + startTime);
-        osc.stop(this.audioCtx.currentTime + startTime + duration);
-    }
-
-    playBGM(type) {
-        if (this.isMuted) return;
-        this.stopBGM();
-
-        if (type === 'main') {
-            // Dark pad sound
-            const freqs = [55, 110, 165]; // Low A chord
-            freqs.forEach(f => {
-                const osc = this.audioCtx.createOscillator();
-                const gain = this.audioCtx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.value = f;
-
-                // LFO for suspense
-                const lfo = this.audioCtx.createOscillator();
-                const lfoGain = this.audioCtx.createGain();
-                lfo.frequency.value = 0.2; // Slow pulse
-                lfo.connect(lfoGain);
-                lfoGain.gain.value = 200;
-                lfoGain.connect(osc.detune);
-                lfo.start();
-
-                gain.gain.value = 0.03;
-
-                osc.connect(gain);
-                gain.connect(this.audioCtx.destination);
-                osc.start();
-
-                this.bgmOscillators.push({ osc, gain, lfo });
-            });
-        }
-    }
-
-    stopBGM() {
-        this.bgmOscillators.forEach(o => {
-            try {
-                o.osc.stop();
-                if (o.lfo) o.lfo.stop();
-            } catch (e) { }
-        });
-        this.bgmOscillators = [];
-    }
-
-    playSFX(type) {
-        if (this.isMuted) return;
-        this.resumeAudioContext();
-
-        switch (type) {
-            case 'correct':
-                // Fanfare
-                this.playTone(440, 'triangle', 0.1, 0); // A4
-                this.playTone(554, 'triangle', 0.1, 0.1); // C#5
-                this.playTone(659, 'triangle', 0.4, 0.2); // E5
-                this.playTone(880, 'triangle', 0.8, 0.3); // A5
-                break;
-            case 'wrong':
-                // Low shock
-                this.playTone(100, 'sawtooth', 0.5, 0, 0.2);
-                this.playTone(90, 'sawtooth', 0.5, 0.1, 0.2);
-                break;
-            case 'suspense':
-                // Heartbeat
-                this.playTone(60, 'sine', 0.1, 0, 0.3);
-                this.playTone(60, 'sine', 0.1, 0.3, 0.2);
-                break;
-            case 'select':
-                this.playTone(800, 'sine', 0.05, 0, 0.1);
-                break;
-        }
-    }
-
-    resumeAudioContext() {
-        if (this.audioCtx && this.audioCtx.state === 'suspended') {
-            this.audioCtx.resume();
-        }
     }
 }
 
