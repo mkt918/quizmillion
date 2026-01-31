@@ -85,7 +85,10 @@ class QuizApp {
                 'D': document.getElementById('percent-d')
             },
             phoneHintArea: document.getElementById('phone-hint-area'),
-            phoneHintText: document.getElementById('phone-hint-text')
+            phoneHintText: document.getElementById('phone-hint-text'),
+            introModal: document.getElementById('intro-modal'),
+            introNextBtn: document.getElementById('intro-next-btn'),
+            introDontShow: document.getElementById('intro-dont-show')
         };
 
         this.prizes = [
@@ -111,6 +114,11 @@ class QuizApp {
     async init() {
         await this.loadQuestions();
         console.log("Loaded questions:", this.questions);
+
+        // Show Intro if not seen
+        if (!this.storage.getIntroSeen()) {
+            this.showIntro();
+        }
     }
 
     initEventListeners() {
@@ -179,6 +187,26 @@ class QuizApp {
         document.getElementById('give-up-btn').onclick = () => {
             if (confirm('本当にあきらめますか？現在の賞金で終了します。')) {
                 this.showResult(true);
+            }
+        };
+
+        // Intro Slider
+        this.els.introNextBtn.onclick = () => {
+            const currentSlide = this.els.introModal.querySelector('.intro-slide.active');
+            const nextSlide = currentSlide.nextElementSibling;
+
+            if (nextSlide && nextSlide.classList.contains('intro-slide')) {
+                currentSlide.classList.remove('active');
+                nextSlide.classList.add('active');
+                if (!nextSlide.nextElementSibling || !nextSlide.nextElementSibling.classList.contains('intro-slide')) {
+                    this.els.introNextBtn.textContent = 'START';
+                }
+            } else {
+                // Finish intro
+                if (this.els.introDontShow.checked) {
+                    this.storage.setIntroSeen(true);
+                }
+                this.els.introModal.classList.add('hidden');
             }
         };
     }
@@ -320,6 +348,15 @@ class QuizApp {
             if (q.text) questions.push(q);
         }
         return questions;
+    }
+
+
+    showIntro() {
+        const slides = this.els.introModal.querySelectorAll('.intro-slide');
+        slides.forEach(s => s.classList.remove('active'));
+        slides[0].classList.add('active');
+        this.els.introNextBtn.textContent = 'NEXT';
+        this.els.introModal.classList.remove('hidden');
     }
 
 
@@ -661,7 +698,7 @@ class QuizApp {
 
         this.showScreen('result');
         const finalPrize = this.score > 0 ? this.prizes[this.score - 1] : 0;
-        document.getElementById('final-score-val').textContent = finalPrize.toLocaleString() + "円";
+        document.getElementById('final-score-val').textContent = finalPrize.toLocaleString();
 
         const isWin = (this.score === this.currentQuizSet.length);
         let header, msg;

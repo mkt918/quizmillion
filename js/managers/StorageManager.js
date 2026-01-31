@@ -8,7 +8,8 @@ class StorageManager {
             MISTAKES: 'quizMillionaireMistakes',
             TOTAL_PRIZE: 'quizTotalPrize',
             OWNED_ITEMS: 'quizOwnedItems',
-            ACTIVE_THEME: 'quizActiveTheme'
+            ACTIVE_THEME: 'quizActiveTheme',
+            INTRO_SEEN: 'quizIntroSeen'
         };
     }
 
@@ -74,7 +75,7 @@ class StorageManager {
 
     getTotalPrize() {
         const value = localStorage.getItem(this.KEYS.TOTAL_PRIZE);
-        return value !== null ? parseInt(value) : 1000000000;
+        return value !== null ? parseInt(value) : 0;
     }
 
     saveTotalPrize(prize) {
@@ -140,5 +141,13 @@ class StorageManager {
 
     clearAll() {
         Object.values(this.KEYS).forEach(key => localStorage.removeItem(key));
+    }
+
+    setIntroSeen(seen) {
+        localStorage.setItem(this.KEYS.INTRO_SEEN, seen ? 'true' : 'false');
+    }
+
+    getIntroSeen() {
+        return localStorage.getItem(this.KEYS.INTRO_SEEN) === 'true';
     }
 }

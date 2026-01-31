@@ -130,14 +130,84 @@ body {
 }
 
 /* Quiz Screen */
+/* Quiz Top Bar Styles */
 .top-bar {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    padding: 10px 20px;
-    font-size: 1.2rem;
-    font-weight: bold;
+    align-items: center;
+    padding: 15px 30px;
+    background: linear-gradient(180deg, rgba(16, 42, 79, 0.95) 0%, rgba(10, 10, 26, 0.95) 100%);
+    border-bottom: 2px solid var(--accent-gold);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 50;
+}
+
+.top-bar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.question-badge {
+    background: var(--accent-gold);
+    color: #000;
+    padding: 2px 12px;
+    border-radius: 4px;
+    font-weight: 900;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+.top-bar-right {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.status-item .label {
+    font-size: 0.7rem;
+    color: var(--accent-gold-light);
+    letter-spacing: 2px;
+    text-shadow: 0 0 5px rgba(212, 175, 55, 0.5);
+    margin-bottom: 2px;
+}
+
+.value-box.prize {
+    font-size: 1.8rem;
+    color: #fff;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    font-family: 'Roboto', sans-serif;
+}
+
+.score-prizes-btn {
+    background: transparent;
+    border: 1px solid var(--accent-gold);
     color: var(--accent-gold);
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.score-prizes-btn:hover {
+    background: rgba(212, 175, 55, 0.1);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
 }
 
 .lifelines {
@@ -793,21 +863,117 @@ body {
     border-radius: 10px;
 }
 
-.shop-item-card {
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(247, 226, 144, 0.2);
-    border-radius: 15px;
-    padding: 25px;
+/* Intro Modal Styles */
+.intro-content {
+    max-width: 600px;
+    width: 90%;
+    background: linear-gradient(135deg, #0a0a1a 0%, #102a4f 100%);
+    padding: 0;
+    overflow: hidden;
+    border-width: 3px;
+    position: relative;
+}
+
+.intro-header {
+    background: var(--accent-gold);
+    color: #000;
+    padding: 20px;
     text-align: center;
-    transition: all 0.3s ease;
+}
+
+.intro-title {
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: 4px;
+    font-size: 1.5rem;
+}
+
+.intro-slides {
+    padding: 40px;
+    min-height: 300px;
+}
+
+.intro-slide {
+    display: none;
+    animation: fadeIn 0.5s ease;
+}
+
+.intro-slide.active {
+    display: block;
+}
+
+.story-text {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    margin-bottom: 20px;
+}
+
+.story-visual {
+    font-size: 4rem;
+    margin-top: 30px;
+    filter: drop-shadow(0 0 15px var(--accent-gold));
+}
+
+.rule-title {
+    color: var(--accent-gold);
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    border-bottom: 1px solid var(--accent-gold);
+    display: inline-block;
+}
+
+.rule-list {
+    text-align: left;
+    list-style: none;
+    padding-left: 0;
+}
+
+.rule-list li {
+    margin-bottom: 15px;
+    font-size: 1rem;
+    display: flex;
+    align-items: flex-start;
+}
+
+.rule-list li::before {
+    content: '✦';
+    color: var(--accent-gold);
+    margin-right: 15px;
+}
+
+.intro-footer {
+    padding: 20px 40px 30px;
+    border-top: 1px solid rgba(212, 175, 55, 0.2);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    width: 100%;
-    min-height: 320px;
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(5px);
+    align-items: center;
+    gap: 20px;
+}
+
+.dont-show-again {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.dont-show-again input[type="radio"],
+.dont-show-again input[type="checkbox"] {
+    cursor: pointer;
+}
+
+text-align: center;
+transition: all 0.3s ease;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+width: 100%;
+min-height: 320px;
+position: relative;
+overflow: hidden;
+backdrop-filter: blur(5px);
 }
 
 .shop-item-card::before {
