@@ -37,6 +37,7 @@ class QuizApp {
         // DOM Elements
         this.screens = {
             start: document.getElementById('start-screen'),
+            category: document.getElementById('category-selection-screen'),
             review: document.getElementById('review-selection-screen'),
             history: document.getElementById('history-screen'),
             units: document.getElementById('unit-selection-screen'),
@@ -113,7 +114,7 @@ class QuizApp {
     }
 
     initEventListeners() {
-        document.getElementById('start-btn').onclick = () => this.showUnitSelection();
+        document.getElementById('start-btn').onclick = () => this.showCategorySelection();
         document.getElementById('review-menu-btn').onclick = () => {
             this.audioManager.init();
             this.showReviewSelection();
@@ -122,7 +123,13 @@ class QuizApp {
 
         document.getElementById('review-back-btn').onclick = () => this.showScreen('start');
         document.getElementById('history-back-btn').onclick = () => this.showScreen('start');
-        document.getElementById('unit-selection-back-btn').onclick = () => this.showScreen('start');
+        document.getElementById('category-back-btn').onclick = () => this.showScreen('start');
+        document.getElementById('unit-selection-back-btn').onclick = () => this.showScreen('category');
+
+        // Category Selection
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.onclick = () => this.handleCategorySelection(btn.dataset.csv);
+        });
 
         document.getElementById('retry-btn').onclick = () => {
             if (this.isReviewMode) {
@@ -309,11 +316,24 @@ class QuizApp {
     }
 
 
-    showUnitSelection() {
+    showCategorySelection() {
         this.audioManager.init();
         this.audioManager.resumeContext();
-        this.audioManager.playBGM('main');
+        this.showScreen('category');
+    }
 
+    async handleCategorySelection(csvPath) {
+        this.quizDataUrl = csvPath;
+        await this.loadQuestions();
+        if (this.questions.length === 0) {
+            alert('問題データの読み込みに失敗しました。');
+            return;
+        }
+        this.audioManager.playBGM('main');
+        this.showUnitSelection();
+    }
+
+    showUnitSelection() {
         this.showScreen('units');
         this.els.unitList.innerHTML = '';
         this.els.unitError.classList.add('hidden');
