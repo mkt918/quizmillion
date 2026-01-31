@@ -174,6 +174,13 @@ class QuizApp {
                 this.correctShuffledIndex = recalcIndex;
             }
         });
+
+        // Give Up Button
+        document.getElementById('give-up-btn').onclick = () => {
+            if (confirm('本当にあきらめますか？現在の賞金で終了します。')) {
+                this.showResult(true);
+            }
+        };
     }
 
     async loadQuestions() {
@@ -644,7 +651,7 @@ class QuizApp {
         }
     }
 
-    showResult() {
+    showResult(isRetired = false) {
         this.audioManager.stopBGM();
 
         if (this.isReviewMode) {
@@ -657,9 +664,18 @@ class QuizApp {
         document.getElementById('final-score-val').textContent = finalPrize.toLocaleString() + "円";
 
         const isWin = (this.score === this.currentQuizSet.length);
-        document.getElementById('result-header').textContent = isWin ? "PERFECT!" : "GAME OVER";
-
-        let msg = isWin ? "ミリオネア達成！おめでとう！" : "残念！次こそは1億円を目指しましょう。";
+        let header, msg;
+        if (isRetired) {
+            header = "RETIRED";
+            msg = "挑戦をあきらめました。";
+        } else if (isWin) {
+            header = "PERFECT!";
+            msg = "ミリオネア達成！おめでとう！";
+        } else {
+            header = "GAME OVER";
+            msg = "残念！次こそは1億円を目指しましょう。";
+        }
+        document.getElementById('result-header').textContent = header;
         document.getElementById('result-message').textContent = msg;
 
         // Show mistake log in result

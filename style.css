@@ -183,6 +183,17 @@ body {
     font-weight: bold;
 }
 
+.lifeline-btn.give-up {
+    border-color: #c0392b;
+    color: #c0392b;
+    font-size: 1rem;
+}
+
+.lifeline-btn.give-up:hover {
+    background: #c0392b;
+    color: #fff;
+}
+
 .question-area {
     width: 100%;
     flex-grow: 1;
