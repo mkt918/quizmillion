@@ -9,7 +9,8 @@ class StorageManager {
             TOTAL_PRIZE: 'quizTotalPrize',
             OWNED_ITEMS: 'quizOwnedItems',
             ACTIVE_THEME: 'quizActiveTheme',
-            INTRO_SEEN: 'quizIntroSeen'
+            INTRO_SEEN: 'quizIntroSeen',
+            UNIT_STATS: 'quizUnitStats'
         };
     }
 
@@ -135,6 +136,30 @@ class StorageManager {
         } catch (e) {
             console.error('Error saving active theme:', e);
         }
+    }
+
+    // --- Unit Stats ---
+
+    getUnitStats() {
+        try {
+            return JSON.parse(localStorage.getItem(this.KEYS.UNIT_STATS)) || {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    saveUnitStats(stats) {
+        try {
+            localStorage.setItem(this.KEYS.UNIT_STATS, JSON.stringify(stats));
+        } catch (e) {}
+    }
+
+    recordUnitAnswer(unitName, isCorrect) {
+        const stats = this.getUnitStats();
+        if (!stats[unitName]) stats[unitName] = { correct: 0, total: 0 };
+        stats[unitName].total++;
+        if (isCorrect) stats[unitName].correct++;
+        this.saveUnitStats(stats);
     }
 
     // --- Utility ---

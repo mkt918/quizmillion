@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Millionaire Quiz</title>
+    <title>Quiz Millionaire</title>
     <link rel="stylesheet" href="style.css">
     <link
         href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap"
@@ -13,27 +13,101 @@
 
 <body>
     <div class="app-container">
-        <!-- Start Screen -->
+
+        <!-- ==================== START SCREEN ==================== -->
         <div id="start-screen" class="screen active">
-            <h1 class="game-title">MILLIONAIRE<br>QUIZ</h1>
-            <button id="start-btn" class="millionaire-btn">START</button>
-            <button id="review-menu-btn" class="millionaire-btn secondary">復習モード</button>
-            <button id="history-menu-btn" class="millionaire-btn secondary">履歴を見る</button>
-            <button id="shop-menu-btn" class="millionaire-btn secondary">ショップ (テーマ変更)</button>
-        </div>
+            <h1 class="game-title">QUIZ<br><span class="title-sub">MILLIONAIRE</span></h1>
 
-        <!-- Review Selection Screen -->
-        <div id="review-selection-screen" class="screen">
-            <h2>復習する問題を選んでください</h2>
-            <div id="review-list" class="item-list">
-                <!-- Loaded via JS -->
+            <div class="start-sections">
+                <div class="start-section">
+                    <div class="start-section-label">🎮 ゲームモード</div>
+                    <button id="start-btn" class="millionaire-btn primary-btn">クイズに挑戦</button>
+                </div>
+
+                <div class="start-section">
+                    <div class="start-section-label">📖 学習モード</div>
+                    <button id="flashcard-btn" class="millionaire-btn secondary">単語学習（フラッシュカード）</button>
+                    <button id="review-menu-btn" class="millionaire-btn secondary">苦手問題の復習</button>
+                </div>
+
+                <div class="start-section">
+                    <div class="start-section-label">📊 記録・設定</div>
+                    <div class="start-row">
+                        <button id="history-menu-btn" class="millionaire-btn secondary small">履歴を見る</button>
+                        <button id="shop-menu-btn" class="millionaire-btn secondary small">テーマショップ</button>
+                    </div>
+                </div>
             </div>
-            <button id="review-back-btn" class="millionaire-btn secondary">戻る</button>
         </div>
 
-        <!-- Category Selection Screen -->
+        <!-- ==================== FLASHCARD SCREEN ==================== -->
+        <div id="flashcard-screen" class="screen">
+            <div class="fc-header">
+                <button id="fc-exit-btn" class="back-btn">← 終了</button>
+                <div class="fc-progress-info">
+                    <span id="fc-progress-text">1 / 20</span>
+                    <div class="fc-progress-bar"><div id="fc-progress-fill" style="width:0%"></div></div>
+                </div>
+                <div class="fc-counts">
+                    <span class="fc-count known-count">✓ <span id="fc-known-num">0</span></span>
+                    <span class="fc-count unknown-count">✗ <span id="fc-unknown-num">0</span></span>
+                </div>
+            </div>
+
+            <div id="fc-card" class="flashcard" onclick="window.fcApp && window.fcApp.flipCard()">
+                <div class="flashcard-inner">
+                    <div class="flashcard-front">
+                        <span class="fc-unit-badge" id="fc-unit"></span>
+                        <p id="fc-question" class="fc-question-text"></p>
+                        <span class="fc-tap-hint">タップして答えを見る ↓</span>
+                    </div>
+                    <div class="flashcard-back">
+                        <span class="fc-answer-label">答え</span>
+                        <p id="fc-answer" class="fc-answer-text"></p>
+                        <hr class="fc-divider">
+                        <p id="fc-explanation" class="fc-explanation-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="fc-actions" class="fc-actions hidden">
+                <button id="fc-unknown-btn" class="fc-btn unknown-btn">✗ わからない</button>
+                <button id="fc-known-btn" class="fc-btn known-btn">✓ わかった！</button>
+            </div>
+        </div>
+
+        <!-- ==================== FLASHCARD COMPLETE SCREEN ==================== -->
+        <div id="flashcard-complete-screen" class="screen">
+            <h2 class="fc-complete-title">学習完了！</h2>
+            <div class="fc-complete-stats">
+                <div class="fc-stat-card known-stat">
+                    <span class="fc-stat-num" id="fc-known-count">0</span>
+                    <span class="fc-stat-label">わかった ✓</span>
+                </div>
+                <div class="fc-stat-card unknown-stat">
+                    <span class="fc-stat-num" id="fc-unknown-count">0</span>
+                    <span class="fc-stat-label">わからない ✗</span>
+                </div>
+            </div>
+            <p id="fc-complete-msg" class="fc-complete-msg"></p>
+            <div class="fc-complete-actions">
+                <button id="fc-quiz-btn" class="millionaire-btn primary-btn">🎮 クイズで確認する</button>
+                <button id="fc-retry-unknown-btn" class="millionaire-btn secondary">🔄 わからなかった問題を再学習</button>
+                <button id="fc-retry-all-btn" class="millionaire-btn secondary">📖 最初からやり直す</button>
+                <button id="fc-home-btn" class="millionaire-btn secondary small">🏠 ホームへ</button>
+            </div>
+        </div>
+
+        <!-- ==================== REVIEW SELECTION SCREEN ==================== -->
+        <div id="review-selection-screen" class="screen">
+            <h2 class="screen-title">🔄 復習する問題を選んでください</h2>
+            <div id="review-list" class="item-list"></div>
+            <button id="review-back-btn" class="millionaire-btn secondary">← 戻る</button>
+        </div>
+
+        <!-- ==================== CATEGORY SELECTION SCREEN ==================== -->
         <div id="category-selection-screen" class="screen">
-            <h2>大単元を選んでください</h2>
+            <h2 class="screen-title" id="category-screen-title">大単元を選んでください</h2>
             <div class="category-grid">
                 <button class="category-btn" data-csv="data/2025_pro01.csv">
                     <span class="category-icon">📚</span>
@@ -52,64 +126,69 @@
                     <span class="category-name">情報処理3級用語</span>
                 </button>
             </div>
-            <button id="category-back-btn" class="millionaire-btn secondary">戻る</button>
+            <button id="category-back-btn" class="millionaire-btn secondary">← 戻る</button>
         </div>
 
-        <!-- Unit Selection Screen -->
+        <!-- ==================== UNIT SELECTION SCREEN ==================== -->
         <div id="unit-selection-screen" class="screen">
-            <h2>出題する単元を選んでください</h2>
-            <div id="unit-selection-list" class="unit-grid">
-                <!-- Loaded via JS -->
-            </div>
+            <h2 class="screen-title" id="unit-screen-title">出題する単元を選んでください</h2>
+            <div id="unit-selection-list" class="unit-grid"></div>
             <div id="total-selected-questions" class="count-display">選択された問題数: 0問</div>
             <div id="unit-error" class="error-message hidden">単元を一つ以上選択してください。</div>
             <div class="selection-controls">
                 <button id="select-all-units-btn" class="millionaire-btn secondary small">すべて選択</button>
-                <button id="confirm-units-btn" class="millionaire-btn">開始</button>
-                <button id="unit-selection-back-btn" class="millionaire-btn secondary small">戻る</button>
+                <button id="confirm-units-btn" class="millionaire-btn primary-btn">開始</button>
+                <button id="unit-selection-back-btn" class="millionaire-btn secondary small">← 戻る</button>
             </div>
         </div>
 
-        <!-- History Screen -->
+        <!-- ==================== HISTORY SCREEN ==================== -->
         <div id="history-screen" class="screen">
-            <h2>過去のリザルト</h2>
-            <div id="history-list" class="card-list">
-                <!-- Loaded via JS -->
-            </div>
-            <button id="history-back-btn" class="millionaire-btn secondary">戻る</button>
+            <h2 class="screen-title">📊 過去のリザルト</h2>
+            <div id="history-list" class="card-list"></div>
+            <button id="history-back-btn" class="millionaire-btn secondary">← 戻る</button>
         </div>
 
-        <!-- Quiz Screen -->
+        <!-- ==================== QUIZ SCREEN ==================== -->
         <div id="quiz-screen" class="screen">
             <div class="top-bar">
                 <div class="top-bar-left">
-                    <div class="question-badge">QUESTION <span id="q-num">1</span></div>
+                    <div class="question-badge">Q <span id="q-num">1</span></div>
                     <div id="unit-display" class="unit-tag"></div>
                 </div>
                 <div class="top-bar-right">
                     <div class="status-item">
-                        <span class="label">CURRENT PRIZE</span>
+                        <span class="label">PRIZE</span>
                         <div class="value-box prize">¥<span id="score-val">0</span></div>
                     </div>
                 </div>
                 <div class="top-bar-controls">
-                    <button id="toggle-score-btn" class="score-prizes-btn">
-                        <span class="icon">🏆</span> PRIZES
-                    </button>
+                    <button id="toggle-score-btn" class="score-prizes-btn">🏆 賞金表</button>
                 </div>
             </div>
 
             <div class="quiz-main-layout">
-                <div id="score-table" class="score-table">
-                    <!-- Loaded via JS -->
-                </div>
+                <div id="score-table" class="score-table"></div>
 
                 <div class="quiz-content-area">
                     <div class="lifelines">
-                        <button id="lifeline-5050" class="lifeline-btn" title="50:50">50:50</button>
-                        <button id="lifeline-phone" class="lifeline-btn" title="Phone">📞</button>
-                        <button id="lifeline-audience" class="lifeline-btn" title="Audience">👥</button>
-                        <button id="give-up-btn" class="lifeline-btn give-up" title="あきらめる">🏳️</button>
+                        <button id="lifeline-5050" class="lifeline-btn" title="50:50">
+                            <span class="ll-icon">50:50</span>
+                        </button>
+                        <button id="lifeline-phone" class="lifeline-btn" title="電話">
+                            <span class="ll-icon">📞</span><span class="ll-label">電話</span>
+                        </button>
+                        <button id="lifeline-audience" class="lifeline-btn" title="オーディエンス">
+                            <span class="ll-icon">👥</span><span class="ll-label">投票</span>
+                        </button>
+                        <button id="give-up-btn" class="lifeline-btn give-up" title="あきらめる">
+                            <span class="ll-icon">🏳️</span><span class="ll-label">退場</span>
+                        </button>
+                    </div>
+
+                    <div id="phone-hint-area" class="phone-hint hidden">
+                        <span class="phone-hint-icon">📞</span>
+                        <p id="phone-hint-text"></p>
                     </div>
 
                     <div class="question-area">
@@ -122,43 +201,56 @@
                     </div>
 
                     <div class="options-grid">
-                        <button class="option-btn" data-index="0"><span class="option-label">A:</span> <span
-                                class="option-text">Option A</span></button>
-                        <button class="option-btn" data-index="1"><span class="option-label">B:</span> <span
-                                class="option-text">Option B</span></button>
-                        <button class="option-btn" data-index="2"><span class="option-label">C:</span> <span
-                                class="option-text">Option C</span></button>
-                        <button class="option-btn" data-index="3"><span class="option-label">D:</span> <span
-                                class="option-text">Option D</span></button>
+                        <button class="option-btn" data-index="0">
+                            <span class="option-label">A</span>
+                            <span class="option-text">Option A</span>
+                        </button>
+                        <button class="option-btn" data-index="1">
+                            <span class="option-label">B</span>
+                            <span class="option-text">Option B</span>
+                        </button>
+                        <button class="option-btn" data-index="2">
+                            <span class="option-label">C</span>
+                            <span class="option-text">Option C</span>
+                        </button>
+                        <button class="option-btn" data-index="3">
+                            <span class="option-label">D</span>
+                            <span class="option-text">Option D</span>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Result Screen -->
+        <!-- ==================== RESULT SCREEN ==================== -->
         <div id="result-screen" class="screen">
-            <h2 id="result-header">GAME OVER</h2>
+            <h2 id="result-header" class="result-header">GAME OVER</h2>
             <div class="final-score">獲得賞金: <span id="final-score-val">0</span>円</div>
-            <p id="result-message"></p>
+            <p id="result-message" class="result-message"></p>
+            <div id="result-accuracy" class="result-accuracy"></div>
             <div id="result-mistakes-area" class="mistakes-log hidden">
                 <h3>間違えた問題:</h3>
                 <ul id="result-mistakes-list"></ul>
             </div>
-            <button id="retry-btn" class="millionaire-btn">TRY AGAIN</button>
-            <button id="home-btn" class="millionaire-btn secondary">HOME</button>
-        </div>
-
-        <!-- Feedback Overlay -->
-        <div id="feedback-overlay" class="feedback-overlay hidden">
-            <div class="feedback-content">
-                <h2 id="feedback-title">CORRECT</h2>
-                <p id="feedback-explanation"></p>
-                <p id="feedback-next-prize" class="next-prize-info"></p>
-                <button id="next-question-btn" class="millionaire-btn">NEXT</button>
+            <div class="result-actions">
+                <button id="retry-btn" class="millionaire-btn primary-btn">もう一度</button>
+                <button id="review-from-result-btn" class="millionaire-btn secondary hidden">📖 間違いを復習</button>
+                <button id="home-btn" class="millionaire-btn secondary">🏠 ホームへ</button>
             </div>
         </div>
 
-        <!-- Audience Graph Modal -->
+        <!-- ==================== FEEDBACK OVERLAY ==================== -->
+        <div id="feedback-overlay" class="feedback-overlay hidden">
+            <div class="feedback-content">
+                <h2 id="feedback-title">CORRECT</h2>
+                <div id="feedback-correct-answer" class="feedback-correct-answer hidden"></div>
+                <p id="feedback-explanation" class="feedback-explanation"></p>
+                <p id="feedback-next-prize" class="next-prize-info"></p>
+                <button id="next-question-btn" class="millionaire-btn primary-btn">NEXT →</button>
+            </div>
+        </div>
+
+        <!-- ==================== AUDIENCE MODAL ==================== -->
         <div id="audience-modal" class="modal hidden">
             <div class="modal-content">
                 <h3>オーディエンスの回答</h3>
@@ -188,7 +280,8 @@
                 <button id="close-audience" class="millionaire-btn small">閉じる</button>
             </div>
         </div>
-        <!-- Intro Story/Rule Modal -->
+
+        <!-- ==================== INTRO MODAL ==================== -->
         <div id="intro-modal" class="modal hidden">
             <div class="modal-content intro-content">
                 <div class="intro-header">
@@ -207,7 +300,7 @@
                             <li>正解するごとに<strong>賞金がランクアップ</strong>します。</li>
                             <li>一度でも間違えると、その時点で退場となります。</li>
                             <li><strong>3つのライフライン</strong>が君を助けてくれます。</li>
-                            <li><strong>あきらめる(🏳️)</strong>と、現在の賞金を持って帰ることができます。</li>
+                            <li><strong>退場(🏳️)</strong>を選ぶと、現在の賞金を持って帰れます。</li>
                         </ul>
                     </div>
                 </div>
@@ -220,20 +313,19 @@
                 </div>
             </div>
         </div>
-        <!-- Shop Screen -->
+
+        <!-- ==================== SHOP SCREEN ==================== -->
         <div id="theme-shop-screen" class="screen">
             <div class="shop-header">
-                <h2>THEME SHOP</h2>
-                <div class="total-prize-display">所持金: <span id="shop-total-prize-display">$0</span></div>
+                <h2>🎨 THEME SHOP</h2>
+                <div class="total-prize-display">所持金: <span id="shop-total-prize-display">¥0</span></div>
             </div>
-            <div id="shop-items-container" class="item-grid">
-                <!-- Loaded via JS -->
-            </div>
-            <button id="shop-close-btn" class="millionaire-btn secondary">戻る</button>
+            <div id="shop-items-container" class="item-grid"></div>
+            <button id="shop-close-btn" class="millionaire-btn secondary">← 戻る</button>
         </div>
-    </div> <!-- app-container end -->
 
-    <!-- Audio Elements -->
+    </div><!-- app-container end -->
+
     <audio id="bgm-main" loop src="assets/audio/bgm_main.mp3"></audio>
 
     <script src="js/managers/StorageManager.js"></script>
@@ -241,5 +333,4 @@
     <script src="js/managers/LifelineManager.js"></script>
     <script src="script.js"></script>
 </body>
-
 </html>
