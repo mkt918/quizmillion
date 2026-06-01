@@ -15,6 +15,7 @@ class QuizApp {
         this.fcKnownIds = [];
         this.fcUnknownIds = [];
         this.fcSelectedUnits = [];
+        this.fcIsReviewMode = false; // true when launched from review hub
 
         // Shop
         this.totalPrize = this.storage.getTotalPrize();
@@ -45,8 +46,9 @@ class QuizApp {
             start:             document.getElementById('start-screen'),
             flashcard:         document.getElementById('flashcard-screen'),
             flashcardComplete: document.getElementById('flashcard-complete-screen'),
+            reviewHub:         document.getElementById('review-hub-screen'),
+            reviewList:        document.getElementById('review-list-screen'),
             category:          document.getElementById('category-selection-screen'),
-            review:            document.getElementById('review-selection-screen'),
             history:           document.getElementById('history-screen'),
             units:             document.getElementById('unit-selection-screen'),
             quiz:              document.getElementById('quiz-screen'),
@@ -62,7 +64,6 @@ class QuizApp {
             qNum:            document.getElementById('q-num'),
             scoreVal:        document.getElementById('score-val'),
             scoreTable:      document.getElementById('score-table'),
-            reviewList:      document.getElementById('review-list'),
             historyList:     document.getElementById('history-list'),
             unitList:        document.getElementById('unit-selection-list'),
             unitError:       document.getElementById('unit-error'),
@@ -108,10 +109,11 @@ class QuizApp {
         ];
 
         this.lifelineManager = new LifelineManager(this.els);
-        window.fcApp = this; // expose for flashcard click handler
+        window.fcApp = this;
 
         this.applyTheme(this.activeTheme);
         this.initEventListeners();
+        this.updateMistakeBadge();
     }
 
     async init() {
@@ -131,14 +133,12 @@ class QuizApp {
         document.getElementById('flashcard-btn').onclick = () => {
             this.pendingMode = 'flashcard';
             this.audioManager.init();
-            document.getElementById('category-screen-title').textContent = '単語学習するカテゴリを選んでください';
-            document.getElementById('unit-screen-title').textContent = '学習する単元を選んでください';
-            document.getElementById('confirm-units-btn').textContent = '学習開始';
+            this._setCategoryUnitLabels('flashcard');
             this.showScreen('category');
         };
         document.getElementById('review-menu-btn').onclick = () => {
             this.audioManager.init();
-            this.showReviewSelection();
+            this.showReviewHub();
         };
         document.getElementById('history-menu-btn').onclick = () => this.showHistory();
         document.getElementById('shop-menu-btn').onclick = () => this.showShop();
@@ -157,8 +157,22 @@ class QuizApp {
         document.getElementById('confirm-units-btn').onclick = () => this.confirmUnits();
         document.getElementById('unit-selection-back-btn').onclick = () => this.showScreen('category');
 
-        // Review
-        document.getElementById('review-back-btn').onclick = () => this.showScreen('start');
+        // Review hub
+        document.getElementById('review-hub-back-btn').onclick = () => this.showScreen('start');
+        document.getElementById('review-fc-btn').onclick = () => this._startReviewFlashcard();
+        document.getElementById('review-quiz-btn').onclick = () => this._startReviewQuiz();
+        document.getElementById('review-list-btn').onclick = () => this.showReviewList();
+
+        // Review list
+        document.getElementById('review-list-back-btn').onclick = () => this.showReviewHub();
+        document.getElementById('review-clear-all-btn').onclick = () => {
+            if (confirm('苦手問題を全て削除しますか？')) {
+                this.mistakes = [];
+                this.storage.saveMistakes([]);
+                this.updateMistakeBadge();
+                this.showReviewHub();
+            }
+        };
 
         // History
         document.getElementById('history-back-btn').onclick = () => this.showScreen('start');
@@ -184,22 +198,28 @@ class QuizApp {
             if (r !== this.correctShuffledIndex) this.correctShuffledIndex = r;
         });
 
-        // Result
+        // Result screen
         document.getElementById('retry-btn').onclick = () => {
-            if (this.isReviewMode) { this.showReviewSelection(); }
+            if (this.isReviewMode) { this.showReviewHub(); }
             else { this.showUnitSelection(); }
         };
         document.getElementById('home-btn').onclick = () => {
             this.audioManager.stopBGM();
             this.showScreen('start');
         };
-        const reviewFromResult = document.getElementById('review-from-result-btn');
-        if (reviewFromResult) {
-            reviewFromResult.onclick = () => {
-                this.audioManager.stopBGM();
-                this.showReviewSelection();
-            };
-        }
+        document.getElementById('result-fc-btn').onclick = () => {
+            this.audioManager.stopBGM();
+            const cards = this.questions.filter(q => this.sessionMistakes.includes(q.id));
+            if (cards.length > 0) {
+                this.fcIsReviewMode = true;
+                this.startFlashcards(cards, null);
+            }
+        };
+        document.getElementById('result-quiz-btn').onclick = () => {
+            this.audioManager.stopBGM();
+            const cards = this.questions.filter(q => this.sessionMistakes.includes(q.id));
+            if (cards.length > 0) this.startQuizWithSet(cards);
+        };
 
         // Shop
         document.getElementById('shop-close-btn').onclick = () => this.showScreen('start');
@@ -222,42 +242,55 @@ class QuizApp {
 
         // Flashcard screen
         document.getElementById('fc-exit-btn').onclick = () => {
-            this._resetCategoryUI();
-            this.showScreen('start');
+            if (this.fcIsReviewMode) {
+                this.fcIsReviewMode = false;
+                this.showReviewHub();
+            } else {
+                this._resetCategoryUI();
+                this.showScreen('start');
+            }
         };
         document.getElementById('fc-known-btn').onclick = () => this.rateCard(true);
         document.getElementById('fc-unknown-btn').onclick = () => this.rateCard(false);
 
-        // Flashcard complete screen
+        // Flashcard complete
         document.getElementById('fc-quiz-btn').onclick = () => {
-            // Start quiz with the cards from this session (unknown first, or all)
             const targetIds = this.fcUnknownIds.length > 0 ? this.fcUnknownIds : this.fcCards.map(q => q.id);
             const quizSet = this.questions.filter(q => targetIds.includes(q.id));
             this._resetCategoryUI();
             this.pendingMode = 'quiz';
+            this.fcIsReviewMode = false;
             this.startQuizWithSet(quizSet);
         };
         document.getElementById('fc-retry-unknown-btn').onclick = () => {
-            if (this.fcUnknownIds.length === 0) {
-                this.startFlashcards(this.fcCards, this.fcSelectedUnits);
-            } else {
-                const unknowns = this.questions.filter(q => this.fcUnknownIds.includes(q.id));
-                this.startFlashcards(unknowns, this.fcSelectedUnits);
-            }
+            const cards = this.fcUnknownIds.length > 0
+                ? this.questions.filter(q => this.fcUnknownIds.includes(q.id))
+                : this.fcCards;
+            this.startFlashcards(cards, this.fcSelectedUnits);
         };
         document.getElementById('fc-retry-all-btn').onclick = () => {
             this.startFlashcards(this.fcCards, this.fcSelectedUnits);
         };
         document.getElementById('fc-home-btn').onclick = () => {
             this._resetCategoryUI();
+            this.fcIsReviewMode = false;
             this.showScreen('start');
         };
     }
 
+    _setCategoryUnitLabels(mode) {
+        const isFC = mode === 'flashcard';
+        document.getElementById('category-screen-title').textContent = isFC
+            ? '単語学習するカテゴリを選んでください'
+            : '大単元を選んでください';
+        document.getElementById('unit-screen-title').textContent = isFC
+            ? '学習する単元を選んでください'
+            : '出題する単元を選んでください';
+        document.getElementById('confirm-units-btn').textContent = isFC ? '学習開始' : '開始';
+    }
+
     _resetCategoryUI() {
-        document.getElementById('category-screen-title').textContent = '大単元を選んでください';
-        document.getElementById('unit-screen-title').textContent = '出題する単元を選んでください';
-        document.getElementById('confirm-units-btn').textContent = '開始';
+        this._setCategoryUnitLabels('quiz');
     }
 
     // ============================================================
@@ -276,7 +309,6 @@ class QuizApp {
     parseCSV(text) {
         const lines = text.trim().split(/\r?\n/);
         const questions = [];
-
         const parseRow = (line) => {
             const fields = [];
             let current = '';
@@ -291,7 +323,6 @@ class QuizApp {
             fields.push(current);
             return fields;
         };
-
         for (let i = 1; i < lines.length; i++) {
             const row = parseRow(lines[i]);
             if (row.length < 4) continue;
@@ -322,6 +353,210 @@ class QuizApp {
         slides[0].classList.add('active');
         this.els.introNextBtn.textContent = 'NEXT';
         this.els.introModal.classList.remove('hidden');
+    }
+
+    // ============================================================
+    //  MISTAKE BADGE
+    // ============================================================
+    updateMistakeBadge() {
+        const badge = document.getElementById('mistake-badge');
+        if (!badge) return;
+        if (this.mistakes.length > 0) {
+            badge.textContent = this.mistakes.length;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    // ============================================================
+    //  REVIEW HUB
+    // ============================================================
+    showReviewHub() {
+        this.showScreen('reviewHub');
+        const count = this.mistakes.length;
+        document.getElementById('review-count-display').textContent = count;
+
+        const actionsEl = document.getElementById('review-hub-actions');
+        const emptyEl = document.getElementById('review-hub-empty');
+
+        if (count === 0) {
+            actionsEl.classList.add('hidden');
+            emptyEl.classList.remove('hidden');
+        } else {
+            actionsEl.classList.remove('hidden');
+            emptyEl.classList.add('hidden');
+        }
+
+        // Unit breakdown
+        this._renderReviewUnitBreakdown();
+    }
+
+    _renderReviewUnitBreakdown() {
+        const el = document.getElementById('review-unit-breakdown');
+        if (!el || this.mistakes.length === 0) { if (el) el.innerHTML = ''; return; }
+
+        // Count by unit
+        const unitCounts = {};
+        this.mistakes.forEach(id => {
+            const q = this.questions.find(q => q.id === id);
+            if (q) unitCounts[q.unit] = (unitCounts[q.unit] || 0) + 1;
+        });
+
+        const maxCount = Math.max(...Object.values(unitCounts));
+        el.innerHTML = Object.entries(unitCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([unit, cnt]) => `
+                <div class="review-unit-row">
+                    <span class="rub-unit">${unit}</span>
+                    <div class="rub-bar-wrap">
+                        <div class="rub-bar" style="width:${Math.round(cnt/maxCount*100)}%"></div>
+                    </div>
+                    <span class="rub-count">${cnt}問</span>
+                </div>
+            `).join('');
+    }
+
+    _startReviewFlashcard() {
+        if (this.mistakes.length === 0) return;
+        const cards = this.questions.filter(q => this.mistakes.includes(q.id));
+        this.fcIsReviewMode = true;
+        this.startFlashcards(cards, null);
+    }
+
+    _startReviewQuiz() {
+        if (this.mistakes.length === 0) return;
+        const questions = this.questions.filter(q => this.mistakes.includes(q.id));
+        this.isReviewMode = true;
+        if (!this.audioManager.audioCtx) this.audioManager.init();
+        this.audioManager.resumeContext();
+        this.audioManager.playBGM('main');
+        this.currentQuestionIndex = 0;
+        this.score = 0;
+        this.sessionMistakes = [];
+        this.lifelineManager.reset();
+        this.shuffle(questions);
+        this.currentQuizSet = questions.slice(0, 20);
+        this.showScreen('quiz');
+        this.displayQuestion();
+    }
+
+    // ============================================================
+    //  REVIEW LIST (accordion)
+    // ============================================================
+    showReviewList() {
+        this.showScreen('reviewList');
+        this._renderReviewAccordion();
+    }
+
+    _renderReviewAccordion() {
+        const el = document.getElementById('review-accordion');
+        if (!el) return;
+        el.innerHTML = '';
+
+        if (this.mistakes.length === 0) {
+            el.innerHTML = '<p class="empty-list-msg">苦手問題がありません 🎉</p>';
+            return;
+        }
+
+        // Group by unit
+        const groups = {};
+        this.mistakes.forEach(id => {
+            const q = this.questions.find(q => q.id === id);
+            if (!q) return;
+            if (!groups[q.unit]) groups[q.unit] = [];
+            groups[q.unit].push(q);
+        });
+
+        Object.entries(groups).forEach(([unit, qs]) => {
+            const group = document.createElement('div');
+            group.className = 'qa-group';
+
+            const header = document.createElement('div');
+            header.className = 'qa-group-header';
+            header.innerHTML = `
+                <span class="qa-group-unit">${unit}</span>
+                <span class="qa-group-count">${qs.length}問</span>
+                <span class="qa-group-toggle">▾</span>
+            `;
+            header.onclick = () => {
+                group.classList.toggle('collapsed');
+            };
+            group.appendChild(header);
+
+            const body = document.createElement('div');
+            body.className = 'qa-group-body';
+
+            qs.forEach(q => {
+                const item = document.createElement('div');
+                item.className = 'qa-item';
+                item.dataset.id = q.id;
+
+                item.innerHTML = `
+                    <div class="qa-question-row">
+                        <span class="qa-q-text">${q.text}</span>
+                        <span class="qa-chevron">▸</span>
+                    </div>
+                    <div class="qa-detail hidden">
+                        <div class="qa-answer-row">
+                            <span class="qa-answer-label">答え</span>
+                            <span class="qa-answer-text">${q.correctAnswer}</span>
+                        </div>
+                        ${q.explanation ? `<p class="qa-explanation">${q.explanation}</p>` : ''}
+                        <button class="qa-resolve-btn" data-id="${q.id}">✓ 解決済みにする</button>
+                    </div>
+                `;
+
+                // Toggle detail
+                item.querySelector('.qa-question-row').onclick = () => {
+                    const detail = item.querySelector('.qa-detail');
+                    const chevron = item.querySelector('.qa-chevron');
+                    const isOpen = !detail.classList.contains('hidden');
+                    detail.classList.toggle('hidden', isOpen);
+                    chevron.textContent = isOpen ? '▸' : '▾';
+                };
+
+                // Resolve button
+                item.querySelector('.qa-resolve-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    this.resolveQuestion(q.id);
+                };
+
+                body.appendChild(item);
+            });
+
+            group.appendChild(body);
+            el.appendChild(group);
+        });
+    }
+
+    resolveQuestion(id) {
+        this.mistakes = this.mistakes.filter(mid => mid !== id);
+        this.storage.saveMistakes(this.mistakes);
+        this.updateMistakeBadge();
+
+        // Remove from DOM
+        const item = document.querySelector(`.qa-item[data-id="${id}"]`);
+        if (item) {
+            item.style.opacity = '0';
+            item.style.transition = 'opacity 0.3s';
+            setTimeout(() => {
+                const group = item.closest('.qa-group');
+                item.remove();
+                // If group is now empty, remove it
+                if (group && group.querySelectorAll('.qa-item').length === 0) {
+                    group.remove();
+                }
+                // If accordion is now empty
+                const accordion = document.getElementById('review-accordion');
+                if (accordion && accordion.querySelectorAll('.qa-item').length === 0) {
+                    accordion.innerHTML = '<p class="empty-list-msg">苦手問題が全てなくなりました 🎉</p>';
+                }
+                // Update count in header if exists
+                document.getElementById('review-count-display') &&
+                    (document.getElementById('review-count-display').textContent = this.mistakes.length);
+            }, 300);
+        }
     }
 
     // ============================================================
@@ -382,7 +617,8 @@ class QuizApp {
     }
 
     updateUnitCount() {
-        const selected = Array.from(this.els.unitList.querySelectorAll('.unit-select-btn.selected')).map(b => b.querySelector('span').textContent);
+        const selected = Array.from(this.els.unitList.querySelectorAll('.unit-select-btn.selected'))
+            .map(b => b.querySelector('span').textContent);
         const count = this.questions.filter(q => selected.includes(q.unit)).length;
         this.els.unitCount.textContent = `選択された問題数: ${count}問`;
     }
@@ -394,14 +630,13 @@ class QuizApp {
     }
 
     confirmUnits() {
-        const selected = Array.from(this.els.unitList.querySelectorAll('.unit-select-btn.selected')).map(b => b.querySelector('span').textContent);
-        if (selected.length === 0) {
-            this.els.unitError.classList.remove('hidden');
-            return;
-        }
+        const selected = Array.from(this.els.unitList.querySelectorAll('.unit-select-btn.selected'))
+            .map(b => b.querySelector('span').textContent);
+        if (selected.length === 0) { this.els.unitError.classList.remove('hidden'); return; }
 
         if (this.pendingMode === 'flashcard') {
             const cards = this.questions.filter(q => selected.includes(q.unit));
+            this.fcIsReviewMode = false;
             this.startFlashcards(cards, selected);
         } else {
             this.startQuiz(false, null, selected);
@@ -426,10 +661,7 @@ class QuizApp {
     }
 
     showCurrentCard() {
-        if (this.fcIndex >= this.fcCards.length) {
-            this.showFlashcardComplete();
-            return;
-        }
+        if (this.fcIndex >= this.fcCards.length) { this.showFlashcardComplete(); return; }
 
         const card = this.fcCards[this.fcIndex];
         const total = this.fcCards.length;
@@ -442,10 +674,8 @@ class QuizApp {
         document.getElementById('fc-answer').textContent = card.correctAnswer;
         document.getElementById('fc-explanation').textContent = card.explanation || '';
 
-        // Reset flip state
         const fcCard = document.getElementById('fc-card');
         fcCard.classList.remove('flipped');
-
         document.getElementById('fc-actions').classList.add('hidden');
     }
 
@@ -453,15 +683,19 @@ class QuizApp {
         const fcCard = document.getElementById('fc-card');
         if (fcCard.classList.contains('flipped')) return;
         fcCard.classList.add('flipped');
-        setTimeout(() => {
-            document.getElementById('fc-actions').classList.remove('hidden');
-        }, 280);
+        setTimeout(() => document.getElementById('fc-actions').classList.remove('hidden'), 280);
     }
 
     rateCard(knew) {
         const card = this.fcCards[this.fcIndex];
         if (knew) {
             this.fcKnownIds.push(card.id);
+            // フラッシュカードで「わかった」→苦手リストからも削除
+            if (this.mistakes.includes(card.id)) {
+                this.mistakes = this.mistakes.filter(id => id !== card.id);
+                this.storage.saveMistakes(this.mistakes);
+                this.updateMistakeBadge();
+            }
         } else {
             this.fcUnknownIds.push(card.id);
         }
@@ -481,18 +715,19 @@ class QuizApp {
         document.getElementById('fc-known-count').textContent = known;
         document.getElementById('fc-unknown-count').textContent = unknown;
 
-        let msg = '';
-        if (unknown === 0) {
-            msg = `完璧です！全 ${total} 問すべてわかりました🎉\nクイズで腕試しをしてみましょう！`;
-        } else {
-            msg = `${total} 問中 ${known} 問わかりました。\nわからなかった ${unknown} 問を重点的に復習しましょう。`;
-        }
+        let msg = unknown === 0
+            ? `完璧です！全 ${total} 問すべてわかりました🎉\nクイズで腕試しをしてみましょう！`
+            : `${total} 問中 ${known} 問わかりました。\nわからなかった ${unknown} 問を重点的に復習しましょう。`;
         document.getElementById('fc-complete-msg').textContent = msg;
 
-        const retryUnknownBtn = document.getElementById('fc-retry-unknown-btn');
-        retryUnknownBtn.textContent = unknown > 0
+        const retryBtn = document.getElementById('fc-retry-unknown-btn');
+        retryBtn.textContent = unknown > 0
             ? `🔄 わからなかった ${unknown} 問を再学習`
             : '🔄 もう一度学習する';
+
+        // ホームボタンのラベル：復習モードから来た場合は復習ハブへ
+        const homeBtn = document.getElementById('fc-home-btn');
+        homeBtn.textContent = this.fcIsReviewMode ? '← 復習メニューへ' : '🏠 ホームへ';
 
         this.showScreen('flashcardComplete');
     }
@@ -512,7 +747,6 @@ class QuizApp {
         this.lifelineManager.reset();
 
         let quizSet = [...this.questions];
-
         if (specificQuestionId) {
             quizSet = quizSet.filter(q => q.id === specificQuestionId);
         } else if (this.isReviewMode) {
@@ -526,7 +760,6 @@ class QuizApp {
         }
 
         this.currentQuizSet = quizSet.slice(0, 20);
-
         if (this.currentQuizSet.length === 0) {
             alert('問題が見つかりませんでした。');
             this.audioManager.stopBGM();
@@ -550,11 +783,7 @@ class QuizApp {
 
         this.shuffle(quizSet);
         this.currentQuizSet = quizSet.slice(0, 20);
-
-        if (this.currentQuizSet.length === 0) {
-            alert('問題が見つかりませんでした。');
-            return;
-        }
+        if (this.currentQuizSet.length === 0) { alert('問題が見つかりませんでした。'); return; }
 
         this.showScreen('quiz');
         this.displayQuestion();
@@ -574,10 +803,7 @@ class QuizApp {
     }
 
     displayQuestion() {
-        if (this.currentQuestionIndex >= this.currentQuizSet.length) {
-            this.showResult();
-            return;
-        }
+        if (this.currentQuestionIndex >= this.currentQuizSet.length) { this.showResult(); return; }
 
         const q = this.currentQuizSet[this.currentQuestionIndex];
 
@@ -585,33 +811,21 @@ class QuizApp {
             this.els.phoneHintArea.classList.add('hidden');
             if (this.els.phoneHintText) this.els.phoneHintText.textContent = '';
         }
-
         this.els.options.forEach(btn => btn.style.opacity = '1');
-
-        if (this.els.audienceBars) {
-            Object.values(this.els.audienceBars).forEach(bar => { if (bar) bar.style.height = '0%'; });
-        }
-        if (this.els.audiencePercents) {
-            Object.values(this.els.audiencePercents).forEach(p => {
-                if (p) { p.textContent = '0%'; p.classList.remove('visible'); }
-            });
-        }
+        if (this.els.audienceBars) Object.values(this.els.audienceBars).forEach(b => { if (b) b.style.height = '0%'; });
+        if (this.els.audiencePercents) Object.values(this.els.audiencePercents).forEach(p => { if (p) { p.textContent = '0%'; p.classList.remove('visible'); } });
         if (this.els.audienceModal) this.els.audienceModal.classList.add('hidden');
 
         this.els.questionText.textContent = q.text;
         this.els.qNum.textContent = this.currentQuestionIndex + 1;
         this.els.unitDisplay.textContent = q.unit || '';
         this.els.scoreVal.textContent = (this.score > 0 ? this.prizes[this.score - 1] : 0).toLocaleString();
-
         this.renderScoreTable();
 
-        // Build distractors
         const correctText = q.correctAnswer;
         let pool = [...new Set(
-            this.questions
-                .filter(item => item.unit === q.unit && item.id !== q.id)
-                .map(item => item.correctAnswer)
-                .filter(t => t !== correctText)
+            this.questions.filter(item => item.unit === q.unit && item.id !== q.id)
+                .map(item => item.correctAnswer).filter(t => t !== correctText)
         )];
         if (pool.length < 3) {
             const extra = [...new Set(
@@ -621,11 +835,7 @@ class QuizApp {
         }
         this.shuffle(pool);
         const distractors = pool.slice(0, 3);
-
-        const allOptions = [
-            { text: correctText, isCorrect: true },
-            ...distractors.map(text => ({ text, isCorrect: false })),
-        ];
+        const allOptions = [{ text: correctText, isCorrect: true }, ...distractors.map(text => ({ text, isCorrect: false }))];
         while (allOptions.length < 4) allOptions.push({ text: '???', isCorrect: false });
 
         this.shuffledOptions = this.shuffle([...allOptions]);
@@ -652,11 +862,8 @@ class QuizApp {
         const selectedIndex = parseInt(btn.dataset.index);
         this.markSelected(btn);
         setTimeout(() => {
-            if (selectedIndex === this.correctShuffledIndex) {
-                this.onCorrect(btn);
-            } else {
-                this.onWrong(btn, this.correctShuffledIndex);
-            }
+            if (selectedIndex === this.correctShuffledIndex) this.onCorrect(btn);
+            else this.onWrong(btn, this.correctShuffledIndex);
         }, 1500);
     }
 
@@ -676,17 +883,15 @@ class QuizApp {
         if (this.isReviewMode) {
             this.mistakes = this.mistakes.filter(id => id !== q.id);
             this.storage.saveMistakes(this.mistakes);
+            this.updateMistakeBadge();
         }
-
         setTimeout(() => this.showFeedback(true), 1500);
     }
 
     onWrong(btn, correctIndex) {
         this.audioManager.playSFX('wrong');
         btn.classList.add('wrong');
-        if (correctIndex >= 0 && correctIndex < 4) {
-            this.els.options[correctIndex].classList.add('correct');
-        }
+        if (correctIndex >= 0 && correctIndex < 4) this.els.options[correctIndex].classList.add('correct');
 
         const q = this.currentQuizSet[this.currentQuestionIndex];
         this.storage.recordUnitAnswer(q.unit, false);
@@ -694,9 +899,9 @@ class QuizApp {
         if (!this.mistakes.includes(q.id)) {
             this.mistakes.push(q.id);
             this.storage.saveMistakes(this.mistakes);
+            this.updateMistakeBadge();
         }
         this.sessionMistakes.push(q.id);
-
         setTimeout(() => this.showFeedback(false), 2000);
     }
 
@@ -729,27 +934,26 @@ class QuizApp {
             nextBtn.textContent = '結果を見る';
             this.els.feedbackNextPrize.classList.add('hidden');
         }
-
         this.els.feedbackOverlay.classList.remove('hidden');
     }
 
     nextQuestion() {
         const isCorrect = this.els.feedbackTitle.textContent === 'CORRECT!';
         this.els.feedbackOverlay.classList.add('hidden');
-
         if (!isCorrect) { this.showResult(); return; }
-
         this.currentQuestionIndex++;
-        if (this.currentQuestionIndex >= this.currentQuizSet.length) {
-            this.showResult();
-        } else {
-            this.displayQuestion();
-        }
+        if (this.currentQuestionIndex >= this.currentQuizSet.length) this.showResult();
+        else this.displayQuestion();
     }
 
     showResult(isRetired = false) {
         this.audioManager.stopBGM();
-        if (this.isReviewMode) { this.showReviewSelection(); return; }
+
+        if (this.isReviewMode) {
+            this.isReviewMode = false;
+            this.showReviewHub();
+            return;
+        }
 
         this.showScreen('result');
         const finalPrize = this.score > 0 ? this.prizes[this.score - 1] : 0;
@@ -757,20 +961,17 @@ class QuizApp {
 
         const isWin = this.score === this.currentQuizSet.length;
         let header, msg;
-        if (isRetired) { header = 'RETIRED'; msg = '挑戦をあきらめました。'; }
-        else if (isWin) { header = 'PERFECT!'; msg = 'ミリオネア達成！おめでとう！🎉'; }
-        else { header = 'GAME OVER'; msg = '次こそ1億円を目指しましょう！'; }
+        if (isRetired)     { header = 'RETIRED';   msg = '挑戦をあきらめました。'; }
+        else if (isWin)    { header = 'PERFECT!';  msg = 'ミリオネア達成！おめでとう！🎉'; }
+        else               { header = 'GAME OVER'; msg = '次こそ1億円を目指しましょう！'; }
 
         document.getElementById('result-header').textContent = header;
         document.getElementById('result-message').textContent = msg;
 
         const accuracy = this.currentQuizSet.length > 0
-            ? Math.round(this.score / this.currentQuizSet.length * 100)
-            : 0;
-        const accuracyEl = document.getElementById('result-accuracy');
-        if (accuracyEl) {
-            accuracyEl.textContent = `正答率: ${this.score} / ${this.currentQuizSet.length} 問正解 (${accuracy}%)`;
-        }
+            ? Math.round(this.score / this.currentQuizSet.length * 100) : 0;
+        document.getElementById('result-accuracy').textContent =
+            `正答率: ${this.score} / ${this.currentQuizSet.length} 問正解 (${accuracy}%)`;
 
         // Mistake log
         const logArea = document.getElementById('result-mistakes-area');
@@ -790,15 +991,17 @@ class QuizApp {
             logArea.classList.add('hidden');
         }
 
-        // Show review shortcut if mistakes exist
-        const reviewBtn = document.getElementById('review-from-result-btn');
-        if (reviewBtn) {
-            if (this.sessionMistakes.length > 0) {
-                reviewBtn.classList.remove('hidden');
-            } else {
-                reviewBtn.classList.add('hidden');
-            }
+        // 結果画面からの復習導線
+        const reviewActions = document.getElementById('result-review-actions');
+        if (this.sessionMistakes.length > 0 && reviewActions) {
+            reviewActions.classList.remove('hidden');
+        } else if (reviewActions) {
+            reviewActions.classList.add('hidden');
         }
+
+        // 「もう一度」ボタンのラベル調整
+        const retryBtn = document.getElementById('retry-btn');
+        retryBtn.textContent = '同じ単元でもう一度';
 
         // Save history
         const result = {
@@ -810,35 +1013,13 @@ class QuizApp {
         };
         this.history.unshift(result);
         this.storage.saveHistory(this.history);
-
         this.totalPrize += finalPrize;
         this.storage.saveTotalPrize(this.totalPrize);
     }
 
     // ============================================================
-    //  REVIEW & HISTORY
+    //  HISTORY
     // ============================================================
-    showReviewSelection() {
-        this.showScreen('review');
-        this.els.reviewList.innerHTML = '';
-
-        if (this.mistakes.length === 0) {
-            this.els.reviewList.innerHTML = '<p style="text-align:center;color:#aaa;padding:20px;">間違えた問題はありません！</p>';
-            return;
-        }
-
-        this.mistakes.forEach(id => {
-            const q = this.questions.find(item => item.id === id);
-            if (q) {
-                const div = document.createElement('div');
-                div.className = 'review-item';
-                div.innerHTML = `<span class="review-unit">${q.unit}</span><span class="review-text">${q.text}</span>`;
-                div.onclick = () => this.startQuiz(true, q.id);
-                this.els.reviewList.appendChild(div);
-            }
-        });
-    }
-
     showHistory() {
         this.showScreen('history');
         this.els.historyList.innerHTML = '';
@@ -879,9 +1060,7 @@ class QuizApp {
     // ============================================================
     showShop() {
         this.showScreen('shop');
-        if (this.els.totalPrizeDisplay) {
-            this.els.totalPrizeDisplay.textContent = `¥${this.totalPrize.toLocaleString()}`;
-        }
+        if (this.els.totalPrizeDisplay) this.els.totalPrizeDisplay.textContent = `¥${this.totalPrize.toLocaleString()}`;
         this.renderShopItems();
     }
 

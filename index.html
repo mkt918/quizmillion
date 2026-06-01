@@ -27,7 +27,10 @@
                 <div class="start-section">
                     <div class="start-section-label">📖 学習モード</div>
                     <button id="flashcard-btn" class="millionaire-btn secondary">単語学習（フラッシュカード）</button>
-                    <button id="review-menu-btn" class="millionaire-btn secondary">苦手問題の復習</button>
+                    <button id="review-menu-btn" class="millionaire-btn secondary">
+                        苦手問題の復習
+                        <span id="mistake-badge" class="mistake-badge hidden"></span>
+                    </button>
                 </div>
 
                 <div class="start-section">
@@ -98,11 +101,62 @@
             </div>
         </div>
 
-        <!-- ==================== REVIEW SELECTION SCREEN ==================== -->
-        <div id="review-selection-screen" class="screen">
-            <h2 class="screen-title">🔄 復習する問題を選んでください</h2>
-            <div id="review-list" class="item-list"></div>
-            <button id="review-back-btn" class="millionaire-btn secondary">← 戻る</button>
+        <!-- ==================== REVIEW HUB SCREEN ==================== -->
+        <div id="review-hub-screen" class="screen">
+            <h2 class="screen-title">📌 苦手問題の復習</h2>
+
+            <div class="review-stats-card">
+                <span class="review-count-big" id="review-count-display">0</span>
+                <span class="review-count-label">問の苦手問題</span>
+            </div>
+
+            <div id="review-unit-breakdown" class="review-unit-breakdown"></div>
+
+            <div id="review-hub-actions" class="review-hub-actions">
+                <button id="review-fc-btn" class="review-action-card">
+                    <span class="rac-icon">🃏</span>
+                    <div class="rac-body">
+                        <span class="rac-title">フラッシュカードで確認</span>
+                        <span class="rac-desc">問題と答えを1枚ずつ確認する</span>
+                    </div>
+                    <span class="rac-arrow">›</span>
+                </button>
+                <button id="review-quiz-btn" class="review-action-card">
+                    <span class="rac-icon">🎮</span>
+                    <div class="rac-body">
+                        <span class="rac-title">まとめてクイズで練習</span>
+                        <span class="rac-desc">苦手問題だけでクイズ開始</span>
+                    </div>
+                    <span class="rac-arrow">›</span>
+                </button>
+                <button id="review-list-btn" class="review-action-card">
+                    <span class="rac-icon">📋</span>
+                    <div class="rac-body">
+                        <span class="rac-title">問題一覧・解説を見る</span>
+                        <span class="rac-desc">答えと解説の確認・個別に削除</span>
+                    </div>
+                    <span class="rac-arrow">›</span>
+                </button>
+            </div>
+
+            <div id="review-hub-empty" class="review-hub-empty hidden">
+                <div class="empty-icon">🎉</div>
+                <p class="empty-title">苦手問題がありません！</p>
+                <p class="empty-desc">クイズに挑戦して苦手問題を見つけましょう。</p>
+            </div>
+
+            <button id="review-hub-back-btn" class="millionaire-btn secondary">← 戻る</button>
+        </div>
+
+        <!-- ==================== REVIEW LIST SCREEN ==================== -->
+        <div id="review-list-screen" class="screen">
+            <div class="review-list-header">
+                <button id="review-list-back-btn" class="back-btn">← 戻る</button>
+                <h2 class="screen-title" style="margin:0">苦手問題一覧</h2>
+                <button id="review-clear-all-btn" class="danger-btn-small">全て削除</button>
+            </div>
+            <p class="review-list-hint">問題をタップすると答えと解説が見られます</p>
+            <div id="review-accordion" class="review-accordion"></div>
         </div>
 
         <!-- ==================== CATEGORY SELECTION SCREEN ==================== -->
@@ -228,13 +282,33 @@
             <div class="final-score">獲得賞金: <span id="final-score-val">0</span>円</div>
             <p id="result-message" class="result-message"></p>
             <div id="result-accuracy" class="result-accuracy"></div>
+
             <div id="result-mistakes-area" class="mistakes-log hidden">
                 <h3>間違えた問題:</h3>
                 <ul id="result-mistakes-list"></ul>
             </div>
+
+            <!-- 間違い問題への導線 -->
+            <div id="result-review-actions" class="result-review-actions hidden">
+                <p class="result-review-label">間違えた問題を復習しますか？</p>
+                <div class="result-review-btns">
+                    <button id="result-fc-btn" class="review-action-card small-rac">
+                        <span class="rac-icon">🃏</span>
+                        <div class="rac-body">
+                            <span class="rac-title">フラッシュカードで確認</span>
+                        </div>
+                    </button>
+                    <button id="result-quiz-btn" class="review-action-card small-rac">
+                        <span class="rac-icon">🎮</span>
+                        <div class="rac-body">
+                            <span class="rac-title">クイズで再挑戦</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
             <div class="result-actions">
                 <button id="retry-btn" class="millionaire-btn primary-btn">もう一度</button>
-                <button id="review-from-result-btn" class="millionaire-btn secondary hidden">📖 間違いを復習</button>
                 <button id="home-btn" class="millionaire-btn secondary">🏠 ホームへ</button>
             </div>
         </div>
